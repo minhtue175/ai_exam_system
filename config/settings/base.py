@@ -1,5 +1,12 @@
 from pathlib import Path
 import os
+from dotenv import load_dotenv  # ← Thêm dòng này
+
+# ===============================
+# LOAD ENVIRONMENT VARIABLES
+# ===============================
+# Load file .env từ thư mục gốc project
+load_dotenv()  # ← Thêm dòng này
 
 # ===============================
 # CORE PATH CONFIG
@@ -166,3 +173,9 @@ LOGOUT_REDIRECT_URL = 'users:login'
 # ===============================
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
+if not GEMINI_API_KEY and DEBUG:
+    import warnings
+    warnings.warn("GEMINI_API_KEY chưa được cấu hình trong file .env!")
