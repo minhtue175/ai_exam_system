@@ -9,6 +9,6 @@ from .grading_service import GradingService
 __all__ = [
     'GeminiQuizGenerator',
     'QuizService',
-    'QuestionShuffler',
+    'QuestionShuffler', 
     'GradingService'
 ]

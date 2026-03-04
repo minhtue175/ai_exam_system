@@ -2,12 +2,12 @@
 Main business logic service for quiz management
 """
 from django.core.exceptions import ValidationError
+from django.db import transaction
 from ..models import Quiz, Question
 from .ai_generator import GeminiQuizGenerator
 import logging
 
 logger = logging.getLogger(__name__)
-
 
 class QuizService:
     """Main business logic for quiz operations"""
@@ -34,46 +34,53 @@ class QuizService:
         Returns:
             Created Quiz instance
         """
+        # Validate document has extracted text
+        if not document.extracted_text:
+            raise ValidationError("Tài liệu chưa có nội dung được trích xuất!")
+        
+        # Validate inputs
+        if num_questions < 1 or num_questions > 40:
+            raise ValidationError("Số câu hỏi phải từ 1 đến 40")
+        
+        logger.info(f"Creating quiz from document: {document.filename}")
+        
         try:
-            # Validate document has extracted text
-            if not document.extracted_text:
-                raise ValidationError("Tài liệu chưa có nội dung được trích xuất!")
-            
-            # Validate inputs
-            if num_questions < 1 or num_questions > 40:
-                raise ValidationError("Số câu hỏi phải từ 1 đến 40")
-            
-            logger.info(f"Creating quiz from document: {document.filename}")
-            
-            # Generate questions using AI
+            # Generate questions using AI (Gọi AI ở ngoài transaction để tránh lock DB quá lâu)
             questions_data = self.ai_generator.generate_questions(
                 text_content=document.extracted_text,
                 num_questions=num_questions,
                 difficulty=difficulty
             )
             
-            # Create Quiz
-            quiz = Quiz.objects.create(
-                document=document,
-                user=user,
-                title=f"Quiz: {document.filename}",
-                num_questions=len(questions_data),
-                difficulty=difficulty
-            )
-            
-            # Create Questions
-            for idx, q_data in enumerate(questions_data):
-                Question.objects.create(
-                    quiz=quiz,
-                    question_text=q_data['question'],
-                    options=q_data['options'],
-                    correct_answer=q_data['correct_answer'],
-                    explanation=q_data.get('explanation', ''),
-                    order=idx + 1
+            # Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+            with transaction.atomic():
+                # Create Quiz
+                quiz = Quiz.objects.create(
+                    document=document,
+                    user=user,
+                    title=f"Quiz: {document.filename}",
+                    num_questions=len(questions_data),
+                    difficulty=difficulty
                 )
-            
+                
+                # Chuẩn bị danh sách đối tượng Question để lưu hàng loạt
+                questions_to_create = []
+                for idx, q_data in enumerate(questions_data):
+                    questions_to_create.append(
+                        Question(
+                            quiz=quiz,
+                            question_text=q_data['question'],
+                            options=q_data['options'],
+                            correct_answer=q_data['correct_answer'],
+                            explanation=q_data.get('explanation', ''),
+                            order=idx + 1
+                        )
+                    )
+                
+                # Lưu toàn bộ câu hỏi bằng 1 câu lệnh SQL duy nhất (Tối ưu hiệu năng)
+                Question.objects.bulk_create(questions_to_create)
+                
             logger.info(f"Quiz created successfully: ID={quiz.id}, Questions={len(questions_data)}")
-            
             return quiz
             
         except ValidationError:
@@ -84,16 +91,15 @@ class QuizService:
     
     def get_user_quizzes(self, user):
         """Get all quizzes created by user"""
-        return Quiz.objects.filter(user=user).select_related('document')
+        return Quiz.objects.filter(user=user).select_related('document').order_by('-created_at')
     
     def get_quiz_with_questions(self, quiz_id: int, user):
         """Get quiz with all questions"""
         try:
-            quiz = Quiz.objects.prefetch_related('questions').get(
+            return Quiz.objects.prefetch_related('questions').get(
                 id=quiz_id,
                 user=user
             )
-            return quiz
         except Quiz.DoesNotExist:
             raise ValidationError("Quiz không tồn tại hoặc bạn không có quyền truy cập!")
     
@@ -105,4 +111,4 @@ class QuizService:
             logger.info(f"Quiz deleted: ID={quiz_id}")
             return True
         except Quiz.DoesNotExist:
-            raise ValidationError("Quiz không tồn tại!")
+            raise ValidationError("Quiz không tồn tại hoặc bạn không có quyền xóa!")

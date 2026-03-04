@@ -6,66 +6,64 @@
 <div class="container mt-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'documents:detail' document.pk %}">{{ document.filename }}</a></li>
-            <li class="breadcrumb-item active">Tạo Quiz</li>
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item text-muted">{{ document.filename }}</li>
+            <li class="breadcrumb-item active fw-bold">Tạo Quiz</li>
         </ol>
     </nav>
     
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow">
+            <div class="card shadow border-0">
                 <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">🤖 Tạo Quiz Tự Động Bằng AI</h3>
+                    <h3 class="mb-0"><i class="bi bi-robot"></i> Tạo Quiz Tự Động Bằng AI</h3>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <strong>📄 Tài liệu:</strong> {{ document.filename }}<br>
-                        <strong>📊 Số từ:</strong> {{ document.extracted_text|wordcount }} từ<br>
-                        <strong>🤖 AI sẽ tạo câu hỏi dựa trên nội dung tài liệu này</strong>
+                <div class="card-body p-4">
+                    <div class="alert alert-info bg-light border-info">
+                        <p class="mb-1"><strong>📄 Tài liệu:</strong> {{ document.filename }}</p>
+                        <p class="mb-1"><strong>📊 Số từ:</strong> {{ document.extracted_text|wordcount }} từ</p>
+                        <p class="mb-0"><strong>🤖 AI sẽ tạo câu hỏi dựa trên nội dung tài liệu này.</strong></p>
                     </div>
                     
-                    <form method="post">
+                    <form method="post" id="quizForm">
                         {% csrf_token %}
                         
-                        <div class="mb-3">
-                            <label for="id_num_questions" class="form-label fw-bold">
+                        <div class="mb-4">
+                            <label for="id_num_questions" class="form-label fw-bold fs-5">
                                 📝 Số câu hỏi (1-40)
                             </label>
-                            {{ form.num_questions }}
-                            {% if form.num_questions.errors %}
-                                <div class="text-danger">{{ form.num_questions.errors }}</div>
-                            {% endif %}
+                            <input type="number" name="num_questions" id="id_num_questions" class="form-control form-control-lg" min="1" max="40" value="10" required>
                             <small class="form-text text-muted">
-                                Gợi ý: 5-10 câu cho tài liệu ngắn, 20-40 câu cho tài liệu dài
+                                Gợi ý: 5-10 câu cho tài liệu ngắn, 20-40 câu cho tài liệu dài.
                             </small>
                         </div>
                         
                         <div class="mb-4">
-                            <label for="id_difficulty" class="form-label fw-bold">
+                            <label for="id_difficulty" class="form-label fw-bold fs-5">
                                 🎯 Độ khó
                             </label>
-                            {{ form.difficulty }}
-                            {% if form.difficulty.errors %}
-                                <div class="text-danger">{{ form.difficulty.errors }}</div>
-                            {% endif %}
+                            <select name="difficulty" id="id_difficulty" class="form-select form-select-lg" required>
+                                <option value="easy">Dễ (Tập trung vào ghi nhớ)</option>
+                                <option value="medium" selected>Trung bình (Đánh giá mức độ hiểu)</option>
+                                <option value="hard">Khó (Đòi hỏi tư duy, phân tích)</option>
+                            </select>
                         </div>
                         
-                        <div class="alert alert-warning">
+                        <div class="alert alert-warning border-warning">
                             <strong>⏱️ Lưu ý:</strong> Quá trình tạo câu hỏi bằng AI có thể mất:
                             <ul class="mb-0 mt-2">
                                 <li><strong>5-10 câu:</strong> 10-20 giây</li>
                                 <li><strong>10-20 câu:</strong> 20-40 giây</li>
                                 <li><strong>20-40 câu:</strong> 40-90 giây</li>
                             </ul>
-                            Vui lòng đợi và <strong>KHÔNG tắt trang</strong>!
+                            Vui lòng đợi và <strong class="text-danger">KHÔNG tắt trang</strong>!
                         </div>
                         
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-magic"></i> Tạo Quiz Bằng AI
+                        <div class="d-flex gap-3 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1" id="submitBtn">
+                                <i class="bi bi-magic"></i> Bắt đầu Tạo Quiz
                             </button>
-                            <a href="{% url 'documents:detail' document.pk %}" class="btn btn-secondary btn-lg">
+                            <a href="{% url 'quizzes:list' %}" class="btn btn-secondary btn-lg px-4">
                                 <i class="bi bi-x-circle"></i> Hủy
                             </a>
                         </div>
@@ -80,6 +78,7 @@
 /* Loading animation khi submit form */
 form button[type="submit"] {
     position: relative;
+    transition: all 0.3s ease;
 }
 
 form button[type="submit"]:active {
@@ -89,21 +88,25 @@ form button[type="submit"]:active {
 /* Show loading when form is submitting */
 form.submitting button[type="submit"] {
     pointer-events: none;
-    opacity: 0.6;
+    opacity: 0.8;
+}
+
+/* Ẩn icon magic khi loading */
+form.submitting button[type="submit"] i {
+    display: none;
 }
 
 form.submitting button[type="submit"]::after {
     content: '';
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    top: 50%;
-    right: 10px;
-    margin-top: -8px;
-    border: 2px solid white;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+    vertical-align: middle;
+    border: 3px solid rgba(255,255,255,0.3);
     border-radius: 50%;
-    border-top-color: transparent;
-    animation: spinner 0.6s linear infinite;
+    border-top-color: white;
+    animation: spinner 0.8s linear infinite;
 }
 
 @keyframes spinner {
@@ -112,10 +115,11 @@ form.submitting button[type="submit"]::after {
 </style>
 
 <script>
-// Show loading state when form is submitted
-document.querySelector('form').addEventListener('submit', function(e) {
+// Logic JS giữ nguyên của bạn để tạo hiệu ứng xoay xoay khi click
+document.getElementById('quizForm').addEventListener('submit', function(e) {
     this.classList.add('submitting');
-    this.querySelector('button[type="submit"]').textContent = 'Đang tạo quiz...';
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = 'Hệ thống AI đang phân tích...';
 });
 </script>
 {% endblock %}

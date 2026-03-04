@@ -3,8 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Quiz
 from apps.documents.models import Document
-from .services.ai_generator import GeminiQuizGenerator  # Đảm bảo đường dẫn này đúng
-from .services.quiz_service import QuizService        # Đảm bảo đường dẫn này đúng
+from .services.quiz_service import QuizService        # Đã bỏ import GeminiQuizGenerator vì Service lo hết rồi
 
 # ==========================================
 # PHASE 4: QUIZ GENERATION & MANAGEMENT
@@ -24,16 +23,14 @@ def quiz_create_view(request, document_id):
         difficulty = request.POST.get('difficulty', 'medium')
         
         try:
-            # 1. Gọi AI để tạo câu hỏi
-            generator = GeminiQuizGenerator()
-            questions_data = generator.generate_questions(
-                text_content=document.extracted_text, 
+            # Gọi Service thực hiện toàn bộ quy trình: Lấy Text -> Gọi AI -> Lưu Database
+            quiz_service = QuizService()
+            quiz = quiz_service.create_quiz_from_document(
+                document=document,
+                user=request.user,
                 num_questions=num_questions,
                 difficulty=difficulty
             )
-            
-            # 2. Lưu vào database
-            quiz = QuizService.save_ai_quiz_to_db(document.id, request.user, questions_data)
             
             messages.success(request, f"Đã tạo thành công bộ câu hỏi '{quiz.title}'!")
             return redirect('quizzes:list')
@@ -44,11 +41,14 @@ def quiz_create_view(request, document_id):
 
     return render(request, 'quizzes/create.html', {'document': document})
 
+# Mở file apps/quizzes/views.py và sửa lại hàm này:
+
 def quiz_detail_view(request, pk):
     """Xem chi tiết bộ đề đã tạo (Preview)"""
     quiz = get_object_or_404(Quiz, pk=pk)
-    # Lấy sẵn các choices để tránh lỗi N+1 Query làm chậm web
-    questions = quiz.questions.all().prefetch_related('choices')
+    
+    # Đã sửa: Xóa prefetch_related và thêm order_by để xếp đúng thứ tự
+    questions = quiz.questions.all().order_by('order')
     
     context = {
         'quiz': quiz,
@@ -60,7 +60,7 @@ def quiz_delete_view(request, pk):
     """Xóa bộ đề (Bảo mật bằng method POST)"""
     quiz = get_object_or_404(Quiz, pk=pk)
     
-    # [TÙY CHỌN] Bảo mật: Chỉ người tạo mới được xóa. 
+    # Bảo mật: Chỉ người tạo mới được xóa. 
     # Nếu đang test chưa có phần đăng nhập, bạn có thể comment 2 dòng if này lại
     if getattr(request.user, 'is_authenticated', False) and request.user != quiz.creator:
         messages.error(request, "Bạn không có quyền xóa bộ đề này.")
@@ -78,7 +78,6 @@ def quiz_delete_view(request, pk):
 # PHASE 5: EXAM & GRADING (DUMMY VIEWS)
 # ==========================================
 # Ghi chú: Các hàm này hiện tại chỉ làm nhiệm vụ "giữ chỗ" để Server không báo lỗi.
-# Ngày mai chúng ta sẽ đắp logic thật vào đây.
 
 def quiz_take_view(request, pk):
     """Giao diện làm bài thi (Sẽ code logic xáo trộn câu hỏi vào ngày mai)"""

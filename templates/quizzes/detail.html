@@ -6,116 +6,119 @@
 <div class="container mt-4">
     <nav aria-label="breadcrumb">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item"><a href="{% url 'quizzes:list' %}">Quizzes</a></li>
-            <li class="breadcrumb-item active">{{ quiz.title }}</li>
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'quizzes:list' %}" class="text-decoration-none">Quizzes</a></li>
+            <li class="breadcrumb-item active fw-bold">{{ quiz.title }}</li>
         </ol>
     </nav>
     
-    <!-- Quiz Info Card -->
-    <div class="card shadow mb-4">
+    <div class="card shadow border-0 mb-4">
         <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">📝 Chi Tiết Quiz</h3>
+            <h3 class="mb-0"><i class="bi bi-file-earmark-text"></i> Chi Tiết Quiz</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <div class="row">
                 <div class="col-md-6">
-                    <table class="table table-borderless">
+                    <table class="table table-borderless mb-0">
                         <tr>
-                            <th width="150">Tiêu đề:</th>
-                            <td><strong>{{ quiz.title }}</strong></td>
+                            <th width="120" class="text-muted">Tiêu đề:</th>
+                            <td class="fs-5"><strong>{{ quiz.title }}</strong></td>
                         </tr>
                         <tr>
-                            <th>Tài liệu:</th>
+                            <th class="text-muted">Tài liệu:</th>
                             <td>
-                                <a href="{% url 'documents:detail' quiz.document.pk %}">
+                                <a href="{% url 'documents:detail' quiz.document.pk %}" class="text-decoration-none fw-bold">
                                     {{ quiz.document.filename }}
                                 </a>
                             </td>
                         </tr>
                         <tr>
-                            <th>Số câu hỏi:</th>
-                            <td><strong>{{ quiz.num_questions }}</strong> câu</td>
+                            <th class="text-muted">Số câu hỏi:</th>
+                            <td><span class="badge bg-secondary fs-6">{{ quiz.num_questions }} Câu</span></td>
                         </tr>
                     </table>
                 </div>
                 
                 <div class="col-md-6">
-                    <table class="table table-borderless">
+                    <table class="table table-borderless mb-0">
                         <tr>
-                            <th width="150">Độ khó:</th>
+                            <th width="120" class="text-muted">Độ khó:</th>
                             <td>
                                 {% if quiz.difficulty == 'easy' %}
                                     <span class="badge bg-success fs-6">Dễ</span>
                                 {% elif quiz.difficulty == 'medium' %}
-                                    <span class="badge bg-warning fs-6">Trung bình</span>
+                                    <span class="badge bg-warning text-dark fs-6">Trung bình</span>
                                 {% else %}
                                     <span class="badge bg-danger fs-6">Khó</span>
                                 {% endif %}
                             </td>
                         </tr>
                         <tr>
-                            <th>Ngày tạo:</th>
+                            <th class="text-muted">Ngày tạo:</th>
                             <td>{{ quiz.created_at|date:"d/m/Y H:i" }}</td>
                         </tr>
                     </table>
                 </div>
             </div>
             
-            <!-- Action Buttons -->
-            <div class="d-flex gap-2 mt-3">
-                <a href="{% url 'quizzes:take' quiz.pk %}" class="btn btn-success btn-lg">
-                    <i class="bi bi-pencil-square"></i> Làm Bài Thi
+            <hr class="my-4">
+            
+            <div class="d-flex gap-3">
+                <a href="{% url 'quizzes:take' quiz.pk %}" class="btn btn-success btn-lg flex-grow-1">
+                    <i class="bi bi-pencil-square"></i> Làm Bài Thi Ngay
                 </a>
-                <a href="{% url 'quizzes:list' %}" class="btn btn-secondary">
+                <a href="{% url 'quizzes:list' %}" class="btn btn-outline-secondary btn-lg px-4">
                     <i class="bi bi-arrow-left"></i> Quay lại
                 </a>
-                <a href="{% url 'quizzes:delete' quiz.pk %}" class="btn btn-danger ms-auto">
-                    <i class="bi bi-trash"></i> Xóa Quiz
-                </a>
+                <form action="{% url 'quizzes:delete' quiz.pk %}" method="POST" class="m-0 ms-auto">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-lg px-4" onclick="return confirm('Bạn có chắc chắn muốn xóa bộ đề này?');">
+                        <i class="bi bi-trash"></i> Xóa
+                    </button>
+                </form>
             </div>
         </div>
     </div>
     
-    <!-- Questions Preview Card -->
-    <div class="card shadow">
+    <div class="card shadow border-0">
         <div class="card-header bg-info text-white">
-            <h4 class="mb-0">❓ Xem Trước Câu Hỏi</h4>
+            <h4 class="mb-0"><i class="bi bi-question-circle"></i> Xem Trước Câu Hỏi</h4>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             {% if questions %}
                 {% for question in questions %}
-                    <div class="mb-4 p-3 border rounded">
-                        <h5 class="text-primary">Câu {{ question.order }}: {{ question.question_text }}</h5>
+                    <div class="mb-4 p-4 border rounded bg-light">
+                        <h5 class="text-primary fw-bold mb-3">Câu {{ question.order }}: {{ question.question_text }}</h5>
                         
-                        <div class="ms-3 mt-3">
-                            {% for i, option in question.options|enumerate %}
+                        <div class="ms-3">
+                            {% for option in question.options %}
                                 <div class="form-check mb-2">
                                     <input class="form-check-input" type="radio" disabled 
-                                           {% if i == question.correct_answer %}checked{% endif %}>
-                                    <label class="form-check-label {% if i == question.correct_answer %}text-success fw-bold{% endif %}">
-                                        {{ forloop.counter0|add:65|chr }}. {{ option }}
-                                        {% if i == question.correct_answer %}
-                                            <span class="badge bg-success ms-2">Đáp án đúng</span>
-                                        {% endif %}
+                                           {% if forloop.counter0 == question.correct_answer %}checked{% endif %}>
+                                    <label class="form-check-label fs-6 {% if forloop.counter0 == question.correct_answer %}text-success fw-bold{% endif %}">
+                                        <strong>{{ forloop.counter }}.</strong> {{ option }}
                                     </label>
                                 </div>
                             {% endfor %}
                         </div>
                         
                         {% if question.explanation %}
-                            <div class="mt-3 p-2 bg-light rounded">
-                                <strong>💡 Giải thích:</strong> {{ question.explanation }}
+                            <div class="mt-4 p-3 bg-white border-start border-4 border-warning rounded">
+                                <strong class="text-warning"><i class="bi bi-lightbulb"></i> Giải thích:</strong> 
+                                <span class="ms-1">{{ question.explanation }}</span>
                             </div>
                         {% endif %}
                     </div>
                 {% endfor %}
             {% else %}
-                <p class="text-muted">Không có câu hỏi nào.</p>
+                <div class="alert alert-secondary text-center">
+                    Không có câu hỏi nào trong bộ đề này.
+                </div>
             {% endif %}
         </div>
     </div>
 </div>
 
-{% load custom_filters %}
+
+
 {% endblock %}

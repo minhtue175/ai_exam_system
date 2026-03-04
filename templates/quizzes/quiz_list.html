@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📚 Danh Sách Bài Thi (Quiz)</h2>
+        <a href="/" class="btn btn-success">+ Upload Tài liệu & Tạo Quiz</a>
+    </div>
+    <hr>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if quizzes %}
+        <div class="row">
+            {% for quiz in quizzes %}
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">{{ quiz.title }}</h5>
+                        <p class="card-text mb-1"><strong>Số câu:</strong> {{ quiz.num_questions }}</p>
+                        <p class="card-text mb-1"><strong>Độ khó:</strong> <span class="badge bg-info text-dark">{{ quiz.difficulty|title }}</span></p>
+                        <p class="card-text"><small class="text-muted">Ngày tạo: {{ quiz.created_at|date:"d/m/Y H:i" }}</small></p>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 d-flex justify-content-between">
+                        <div>
+                            <a href="{% url 'quizzes:detail' quiz.id %}" class="btn btn-outline-secondary btn-sm">Xem đề</a>
+                            <a href="{% url 'quizzes:take' quiz.id %}" class="btn btn-primary btn-sm">Làm bài</a>
+                        </div>
+                        
+                        <form action="{% url 'quizzes:delete' quiz.id %}" method="POST" class="d-inline">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Xóa bộ đề này vĩnh viễn?');">Xóa</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-light text-center py-5 shadow-sm">
+            <h4>Chưa có bài thi nào được tạo!</h4>
+            <p class="text-muted">Hãy upload một tài liệu và để AI giúp bạn tạo bộ đề đầu tiên.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
