@@ -70,14 +70,14 @@ Trả về ĐÚNG định dạng JSON, KHÔNG thêm markdown hay text khác.
             if not text_content or len(text_content.strip()) < 100:
                 raise ValueError("Văn bản quá ngắn! Cần ít nhất 100 ký tự.")
             
-            if num_questions < 1 or num_questions > 20:
-                raise ValueError("Số câu hỏi phải từ 1 đến 20")
+            if num_questions < 1 or num_questions > 40:
+                raise ValueError("Số câu hỏi phải từ 1 đến 40")
             
             if difficulty not in ['easy', 'medium', 'hard']:
                 difficulty = 'medium'
             
-            # Truncate if too long
-            max_chars = 15000
+            # Truncate if too long - TĂNG LÊN CHO 40 CÂU
+            max_chars = 30000
             if len(text_content) > max_chars:
                 logger.warning(f"Text too long, truncating to {max_chars}")
                 text_content = text_content[:max_chars] + "\n\n[...văn bản đã rút gọn...]"
@@ -91,7 +91,7 @@ Trả về ĐÚNG định dạng JSON, KHÔNG thêm markdown hay text khác.
             
             logger.info(f"Generating {num_questions} questions (difficulty: {difficulty})")
             
-            # Call Gemini API
+           # Call Gemini API
             response = self.client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt

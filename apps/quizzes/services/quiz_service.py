@@ -28,7 +28,7 @@ class QuizService:
         Args:
             document: Document instance
             user: User instance
-            num_questions: Number of questions (1-20)
+            num_questions: Number of questions (1-40)
             difficulty: easy/medium/hard
             
         Returns:
@@ -40,8 +40,8 @@ class QuizService:
                 raise ValidationError("Tài liệu chưa có nội dung được trích xuất!")
             
             # Validate inputs
-            if num_questions < 1 or num_questions > 20:
-                raise ValidationError("Số câu hỏi phải từ 1 đến 20")
+            if num_questions < 1 or num_questions > 40:
+                raise ValidationError("Số câu hỏi phải từ 1 đến 40")
             
             logger.info(f"Creating quiz from document: {document.filename}")
             

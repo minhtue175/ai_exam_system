@@ -78,6 +78,18 @@
             
             <!-- Action Buttons -->
             <div class="d-flex gap-2 mt-3">
+                <!-- NÚT TẠO QUIZ -->
+                {% if document.status == 'completed' and document.extracted_text %}
+                    <a href="{% url 'quizzes:create' document.pk %}" 
+                       class="btn btn-primary btn-lg">
+                        <i class="bi bi-magic"></i> 🤖 Tạo Quiz Bằng AI
+                    </a>
+                {% else %}
+                    <button class="btn btn-secondary btn-lg" disabled title="Cần trích xuất văn bản trước">
+                        <i class="bi bi-magic"></i> Tạo Quiz (Chưa sẵn sàng)
+                    </button>
+                {% endif %}
+                
                 <a href="{{ document.file_path.url }}" 
                    class="btn btn-success" 
                    download>
