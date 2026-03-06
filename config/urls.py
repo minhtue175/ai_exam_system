@@ -13,7 +13,8 @@ urlpatterns = [
     
     path('documents/', include('apps.documents.urls')),
     
-    path('quizzes/', include('apps.quizzes.urls')),  # ← KIỂM TRA DÒNG NÀY
+    path('quizzes/', include('apps.quizzes.urls')),
+    
     path('exports/', include('apps.exports.urls')),
 ]
 
