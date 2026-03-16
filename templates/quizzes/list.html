@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Danh Sách Quiz{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item active fw-bold">Danh sách Quizzes</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 text-primary fw-bold"><i class="bi bi-collection-play"></i> Danh Sách Bài Thi (Quiz)</h2>
+        <a href="{% url 'documents:upload' %}" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-lg"></i> Upload Tài liệu & Tạo Quiz
+        </a>
+    </div>
+
+    {% if quizzes %}
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% for quiz in quizzes %}
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0 hover-shadow transition-all">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                        <h5 class="card-title text-primary fw-bold text-truncate" title="{{ quiz.title }}">
+                            {{ quiz.title }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2 text-muted">
+                            <i class="bi bi-question-square me-2"></i><strong>Số câu:</strong> {{ quiz.num_questions }}
+                        </p>
+                        <p class="mb-2 text-muted">
+                            <i class="bi bi-bar-chart-steps me-2"></i><strong>Độ khó:</strong> 
+                            {% if quiz.difficulty == 'basic' %}
+                                <span class="badge bg-success">Cơ bản</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">Nâng cao</span>
+                            {% endif %}
+                        </p>
+                        <p class="mb-0 text-muted fs-6">
+                            <i class="bi bi-clock me-2"></i>Tạo ngày: {{ quiz.created_at|date:"d/m/Y H:i" }}
+                        </p>
+                    </div>
+                    <div class="card-footer bg-white border-top-0 d-flex justify-content-between align-items-center pb-4">
+                        <div class="btn-group shadow-sm">
+                            <a href="{% url 'quizzes:detail' quiz.pk %}" class="btn btn-outline-primary btn-sm px-3">Xem đề</a>
+                            <a href="{% url 'quizzes:take' quiz.pk %}" class="btn btn-primary btn-sm px-3">Làm bài</a>
+                        </div>
+                        
+                        <button type="button" class="btn btn-danger btn-sm shadow-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#dynamicDeleteModal" 
+                                data-quiz-id="{{ quiz.pk }}" 
+                                data-quiz-title="{{ quiz.title }}">
+                            Xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="card shadow-sm border-0 mt-4">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-folder-x display-1 text-muted opacity-50 mb-3"></i>
+                <h4 class="text-secondary">Chưa có bộ đề nào được tạo.</h4>
+                <p class="text-muted">Hãy upload một tài liệu PDF/Word để AI giúp bạn tạo bộ đề trắc nghiệm nhé!</p>
+                <a href="{% url 'documents:upload' %}" class="btn btn-primary btn-lg mt-2 px-5 rounded-pill shadow-sm">
+                    Tạo Quiz Đầu Tiên
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="dynamicDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Xác nhận xóa vĩnh viễn
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body fs-5 py-4 text-center">
+                Bạn có chắc chắn muốn xóa bộ đề:<br>
+                <strong id="modalQuizTitle" class="text-primary d-block mt-2 mb-2 fs-4"></strong>
+                <small class="text-danger fs-6 d-block mt-3">⚠️ Thao tác này sẽ xóa toàn bộ câu hỏi và lịch sử thi của bộ đề này!</small>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                <form id="deleteQuizForm" method="POST" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-5 fw-bold">Vâng, Xóa ngay!</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var deleteModal = document.getElementById('dynamicDeleteModal');
+        
+        if (deleteModal) {
+            deleteModal.addEventListener('show.bs.modal', function (event) {
+                // Lấy nút Xóa vừa được bấm
+                var button = event.relatedTarget;
+                
+                // Trích xuất ID và Title từ data-* attributes của nút đó
+                var quizId = button.getAttribute('data-quiz-id');
+                var quizTitle = button.getAttribute('data-quiz-title');
+                
+                // Cập nhật tên bài thi vào trong Modal cho người dùng xem
+                var modalTitleDisplay = deleteModal.querySelector('#modalQuizTitle');
+                modalTitleDisplay.textContent = quizTitle;
+                
+                // Cập nhật đường link Action của Form
+                // Dùng trick thay thế số 0 bằng ID thực tế của Quiz
+                var form = deleteModal.querySelector('#deleteQuizForm');
+                var actionUrl = "{% url 'quizzes:delete' 0 %}".replace('0', quizId);
+                form.action = actionUrl;
+            });
+        }
+    });
+</script>
+
+<style>
+    .hover-shadow:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+    }
+    .transition-all {
+        transition: all .3s ease-in-out;
+    }
+</style>
+{% endblock %}

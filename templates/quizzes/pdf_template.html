@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Kết quả thi - {{ attempt.quiz.title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 20px; }
+        .header { text-align: center; border-bottom: 2px solid #0d6efd; padding-bottom: 15px; margin-bottom: 30px; }
+        .score-box { border: 1px solid #ccc; padding: 15px; text-align: center; background-color: #f8f9fa; margin-bottom: 30px; }
+        .score-text { font-size: 24px; font-weight: bold; color: #0d6efd; }
+        .question-card { margin-bottom: 25px; page-break-inside: avoid; }
+        .correct { color: #198754; font-weight: bold; }
+        .incorrect { color: #dc3545; font-weight: bold; text-decoration: line-through; }
+        .explanation { background-color: #fff3cd; padding: 10px; border-left: 4px solid #ffc107; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>PHIẾU KẾT QUẢ TRẮC NGHIỆM</h1>
+        <h2>{{ attempt.quiz.title }}</h2>
+        <p>Học viên: {{ attempt.user.username }} | Ngày thi: {{ attempt.completed_at|date:"d/m/Y H:i" }}</p>
+    </div>
+
+    <div class="score-box">
+        <div class="score-text">ĐIỂM SỐ: {{ attempt.score }} / 10</div>
+        <p>Trả lời đúng: {{ attempt.correct_answers }} / {{ attempt.total_questions }} câu</p>
+    </div>
+
+    <h3>CHI TIẾT BÀI LÀM:</h3>
+    
+    {% for item in results_data %}
+        <div class="question-card">
+            <p><strong>Câu {{ item.question.order }}: {{ item.question.question_text }}</strong></p>
+            
+            <ul style="list-style-type: none; padding-left: 10px;">
+                {% for option in item.question.options %}
+                    {% if forloop.counter0 == item.question.correct_answer %}
+                        <li class="correct">✔️ {{ option }} (Đáp án đúng)</li>
+                    {% elif forloop.counter0 == item.user_choice and not item.is_correct %}
+                        <li class="incorrect">❌ {{ option }} (Bạn chọn sai)</li>
+                    {% else %}
+                        <li>- {{ option }}</li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+
+            {% if item.question.explanation %}
+                <div class="explanation">
+                    <strong>Giải thích:</strong> {{ item.question.explanation }}
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</body>
+</html>

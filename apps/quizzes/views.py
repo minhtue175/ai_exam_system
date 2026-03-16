@@ -5,7 +5,10 @@ from .models import Quiz
 from apps.documents.models import Document
 from .services.quiz_service import QuizService     
 from django.utils import timezone
-from .models import Quiz, UserQuizAttempt # Thêm UserQuizAttempt vào đây
+from .models import Quiz, UserQuizAttempt
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+import weasyprint
 
 # Đã bỏ import GeminiQuizGenerator vì Service lo hết rồi
 
@@ -156,3 +159,39 @@ def quiz_result_view(request, attempt_id):
         'attempt': attempt,
         'results_data': results_data
     })
+    
+    
+    # ==========================================
+# PHASE 6: XUẤT PDF
+# ==========================================
+def export_pdf_view(request, attempt_id):
+    """Xuất kết quả bài làm ra file PDF"""
+    attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
+    questions = attempt.quiz.questions.all().order_by('order')
+    
+    results_data = []
+    for q in questions:
+        user_choice = attempt.answers.get(str(q.id))
+        results_data.append({
+            'question': q,
+            'user_choice': user_choice,
+            'is_correct': user_choice == q.correct_answer
+        })
+        
+    # Render dữ liệu ra HTML
+    html_string = render_to_string('quizzes/pdf_template.html', {
+        'attempt': attempt,
+        'results_data': results_data,
+    })
+    
+    # Dùng WeasyPrint tạo PDF
+    html = weasyprint.HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+    pdf = html.write_pdf()
+    
+    # Trả về file cho trình duyệt tải xuống
+    response = HttpResponse(pdf, content_type='application/pdf')
+    # Encode tên file để tránh lỗi tiếng Việt
+    filename = f"Ket_qua_{attempt.quiz.id}.pdf" 
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    
+    return response
