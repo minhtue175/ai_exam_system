@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Fluesy Support Exam{% endblock %}</title>
+    <title>{% block title %}Fluesy Exam{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        /* Tông màu chủ đạo Coursue & Fluesy */
+        
         :root {
             --primary-color: #6a35ff;
             --primary-light: #f0ebff;
@@ -80,13 +80,13 @@
             background-color: #f8f9fa;
         }
 
-        /* Nút đang Active */
+
         .nav-item-custom.active {
             background-color: var(--primary-light);
             color: var(--primary-color);
         }
 
-        /* Nút Logout nằm dưới cùng */
+
         .logout-btn {
             position: absolute;
             bottom: 30px;
@@ -101,14 +101,19 @@
 
         /* --- MAIN CONTENT --- */
         .main-wrapper {
-            margin-left: 260px;
+
             padding: 30px 40px;
             min-height: 100vh;
             transition: all 0.3s ease;
         }
         
-        /* Class này dùng để chừa chỗ cho Right Sidebar (Dashboard) */
-        .main-wrapper.has-right-sidebar {
+        /* Nếu ĐÃ đăng nhập: chừa chỗ cho Sidebar bên trái (260px) */
+        .is-logged-in {
+            margin-left: 260px;
+        }
+
+        /* Chừa chỗ cho Right Sidebar (Dashboard) */
+        .has-right-sidebar {
             margin-right: 320px;
         }
 
@@ -126,7 +131,7 @@
             z-index: 1000;
         }
 
-        /* Custom Cards & Tables */
+        
         .card-custom {
             background: var(--bg-card);
             border-radius: 16px;
@@ -148,6 +153,7 @@
 </head>
 <body>
 
+    {% if user.is_authenticated %}
     <div class="left-sidebar">
         <a href="/" class="brand-logo">
             <i class="bi bi-bezier2"></i> Fluesy
@@ -156,32 +162,38 @@
         <div class="text-muted text-uppercase fw-bold mb-3" style="font-size: 11px; letter-spacing: 1px;">Tổng quan</div>
         <ul class="nav-menu">
             <li>
-                <a href="{% url 'core:dashboard' %}" class="nav-item-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <a href="{% url 'core:dashboard' %}" class="nav-item-custom {% if 'dashboard' in request.path %}active{% endif %}">
                     <i class="bi bi-house-door"></i> Dashboard
                 </a>
             </li>
             <li>
-                <a href="{% url 'quizzes:list' %}" class="nav-item-custom {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
+                <a href="{% url 'quizzes:list' %}" class="nav-item-custom {% if 'quizzes' in request.path %}active{% endif %}">
                     <i class="bi bi-journal-check"></i> List Quizzes
                 </a>
             </li>
             <li>
-                <a href="{% url 'documents:upload' %}" class="nav-item-custom {% if request.resolver_match.url_name == 'upload' %}active{% endif %}">
+                <a href="{% url 'documents:upload' %}" class="nav-item-custom {% if 'upload' in request.path %}active{% endif %}">
                     <i class="bi bi-cloud-arrow-up"></i> Upload Tài liệu
                 </a>
             </li>
         </ul>
 
-        <a href="#" class="nav-item-custom logout-btn">
-            <i class="bi bi-box-arrow-right"></i> Đăng xuất
-        </a>
+        <form action="{% url 'logout' %}" method="post" class="m-0 p-0">
+            {% csrf_token %}
+            <button type="submit" class="nav-item-custom logout-btn w-100 text-start" style="background: transparent; border: none; cursor: pointer;">
+                <i class="bi bi-box-arrow-right"></i> Đăng xuất
+            </button>
+        </form>
     </div>
+    {% endif %}
 
-    <div class="main-wrapper {% block main_classes %}has-right-sidebar{% endblock %}">
+    <div class="main-wrapper {% if user.is_authenticated %}is-logged-in {% block main_classes %}has-right-sidebar{% endblock %}{% endif %}">
         {% block content %}{% endblock %}
     </div>
 
-    {% block right_sidebar %}{% endblock %}
+    {% if user.is_authenticated %}
+        {% block right_sidebar %}{% endblock %}
+    {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
