@@ -70,17 +70,14 @@
                 <a href="{% url 'quizzes:list' %}" class="btn btn-outline-secondary btn-lg px-4">
                     <i class="bi bi-arrow-left"></i> Quay lại
                 </a>
-                <form action="{% url 'quizzes:delete' quiz.pk %}" method="POST" class="m-0 ms-auto">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger btn-lg px-4" onclick="return confirm('Bạn có chắc chắn muốn xóa bộ đề này?');">
-                        <i class="bi bi-trash"></i> Xóa
-                    </button>
-                </form>
+                <button type="button" class="btn btn-danger btn-lg px-4 ms-auto shadow-sm" data-bs-toggle="modal" data-bs-target="#deleteQuizModal">
+                    <i class="bi bi-trash"></i> Xóa Quiz
+                </button>
             </div>
         </div>
     </div>
     
-    <div class="card shadow border-0">
+    <div class="card shadow border-0 mb-5">
         <div class="card-header bg-info text-white">
             <h4 class="mb-0"><i class="bi bi-question-circle"></i> Xem Trước Câu Hỏi</h4>
         </div>
@@ -119,7 +116,32 @@
     </div>
 </div>
 
-
+<div class="modal fade" id="deleteQuizModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill"></i> Cảnh báo xóa dữ liệu
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body fs-5 py-4 text-center">
+                Bạn có chắc chắn muốn xóa bộ đề <br><strong>"{{ quiz.title }}"</strong> không?
+                <br>
+                <small class="text-danger fs-6 mt-3 d-block">
+                    ⚠️ Lưu ý: Toàn bộ câu hỏi và <strong>lịch sử làm bài</strong> của bộ đề này sẽ bị xóa vĩnh viễn và không thể khôi phục!
+                </small>
+            </div>
+            <div class="modal-footer bg-light border-0">
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy</button>
+                <form action="{% url 'quizzes:delete' quiz.pk %}" method="POST" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger px-5 fw-bold">Vâng, Xóa ngay!</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 {% endblock %}
 

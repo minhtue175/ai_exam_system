@@ -26,7 +26,7 @@
                                     <input class="form-check-input" type="radio" 
                                            name="question_{{ question.id }}" 
                                            id="q{{ question.id }}_opt{{ forloop.counter0 }}" 
-                                           value="{{ forloop.counter0 }}" required>
+                                           value="{{ forloop.counter0 }}" >
                                     <label class="form-check-label cursor-pointer" for="q{{ question.id }}_opt{{ forloop.counter0 }}">
                                         {{ option }}
                                     </label>
@@ -36,15 +36,52 @@
                         </div>
                         {% endfor %}
                         
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg" onclick="return confirm('Bạn đã chắc chắn muốn nộp bài?');">
+                        <div class="d-grid gap-2 mt-5">
+                            <button type="button" class="btn btn-success btn-lg shadow-sm" data-bs-toggle="modal" data-bs-target="#confirmSubmitModal">
                                 <i class="bi bi-check-circle"></i> Nộp Bài Chấm Điểm
                             </button>
                         </div>
+
+                        <div class="modal fade" id="confirmSubmitModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="confirmSubmitModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-lg">
+                                    <div class="modal-header bg-warning text-dark">
+                                        <h5 class="modal-title fw-bold" id="confirmSubmitModalLabel">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> Xác nhận nộp bài
+                                        </h5>
+                                        <button type="button" class="btn-close" id="closeModalBtn" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body fs-5 py-4 text-center">
+                                        Bạn đã chắc chắn muốn nộp bài chấm điểm chưa?
+                                        <br>
+                                        <small class="text-danger fs-6 mt-2 d-block">Lưu ý: Hành động này không thể hoàn tác.</small>
+                                    </div>
+                                    <div class="modal-footer bg-light border-0">
+                                        <button type="submit" class="btn btn-success btn-lg w-100 fw-bold" id="realSubmitBtn">Nộp bài ngay</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.getElementById('realSubmitBtn').addEventListener('click', function() {
+        // Đổi text thành hiệu ứng xoay
+        this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Đang chấm điểm, vui lòng đợi...';
+        
+        // Vô hiệu hóa nút để chống click đúp
+        this.classList.add('disabled');
+        this.style.pointerEvents = 'none';
+        
+        // Giấu luôn nút [X] ở góc trên cùng để khóa hoàn toàn Modal
+        document.getElementById('closeModalBtn').style.display = 'none';
+    });
+</script>
 {% endblock %}
+

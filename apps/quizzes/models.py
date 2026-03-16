@@ -2,14 +2,13 @@ from django.db import models
 from django.conf import settings
 from apps.core.models import TimeStampedModel
 
-
 class Quiz(TimeStampedModel):
     """Quiz generated from document"""
     
+    # Đã thu gọn thành 2 mức theo yêu cầu của bạn
     DIFFICULTY_CHOICES = [
-        ('easy', 'Dễ'),
-        ('medium', 'Trung bình'),
-        ('hard', 'Khó'),
+        ('basic', 'Đánh giá mức độ hiểu'),
+        ('advanced', 'Đòi hỏi tư duy, phân tích'),
     ]
     
     document = models.ForeignKey(
@@ -27,7 +26,7 @@ class Quiz(TimeStampedModel):
     difficulty = models.CharField(
         max_length=20,
         choices=DIFFICULTY_CHOICES,
-        default='medium'
+        default='basic'
     )
     
     class Meta:
@@ -62,11 +61,14 @@ class Question(models.Model):
     
     def get_correct_answer_text(self):
         """Get the text of correct answer"""
-        return self.options[self.correct_answer]
+        try:
+            return self.options[self.correct_answer]
+        except (IndexError, TypeError):
+            return "Không xác định"
 
 
 class UserQuizAttempt(TimeStampedModel):
-    """User's attempt at a quiz"""
+    """User's attempt at a quiz (Lưu kết quả làm bài)"""
     
     quiz = models.ForeignKey(
         Quiz,
@@ -78,8 +80,16 @@ class UserQuizAttempt(TimeStampedModel):
         on_delete=models.CASCADE,
         related_name='quiz_attempts'
     )
-    answers = models.JSONField()  # {question_id: selected_index}
-    score = models.DecimalField(max_digits=5, decimal_places=2)
+    
+    # Lưu dưới dạng dict: {"ID_câu_hỏi": Index_đáp_án_đã_chọn} -> Ví dụ: {"15": 2, "16": 0}
+    answers = models.JSONField(default=dict, blank=True) 
+    
+    # Các trường thống kê điểm số
+    total_questions = models.IntegerField(default=0)
+    correct_answers = models.IntegerField(default=0)
+    score = models.DecimalField(max_digits=5, decimal_places=2, default=0.00) # Điểm hệ 10 hoặc 100
+    
+    # Trạng thái nộp bài
     completed_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
@@ -87,4 +97,4 @@ class UserQuizAttempt(TimeStampedModel):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"{self.user.username} - {self.quiz.title} - {self.score}%"
+        return f"{self.user.username} - {self.quiz.title} - {self.score} điểm"

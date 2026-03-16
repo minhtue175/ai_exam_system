@@ -17,19 +17,19 @@
     </div>
     <div class="col-md-6 text-end">
         <a href="{% url 'documents:upload' %}" class="btn btn-primary">
-            📤 Upload File
+            <i class="bi bi-upload"></i> Upload File
         </a>
     </div>
 </div>
 
-<div class="card">
+<div class="card mb-5 shadow-sm">
     <div class="card-body">
         <p>Tổng số tài liệu: <strong>{{ total_documents }}</strong></p>
         
         {% if documents %}
             <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
                         <tr>
                             <th>Tên file</th>
                             <th>Loại</th>
@@ -43,7 +43,7 @@
                         {% for doc in documents %}
                         <tr>
                             <td>
-                                <i class="bi bi-file-earmark-pdf"></i>
+                                <i class="bi bi-file-earmark-text text-primary"></i>
                                 {{ doc.filename }}
                             </td>
                             <td>
@@ -60,7 +60,7 @@
                                 {% if doc.status == 'completed' %}
                                     <span class="badge bg-success">Hoàn thành</span>
                                 {% elif doc.status == 'processing' %}
-                                    <span class="badge bg-warning">Đang xử lý</span>
+                                    <span class="badge bg-warning text-dark">Đang xử lý</span>
                                 {% elif doc.status == 'failed' %}
                                     <span class="badge bg-danger">Lỗi</span>
                                 {% else %}
@@ -69,13 +69,11 @@
                             </td>
                             <td>{{ doc.created_at|date:"d/m/Y H:i" }}</td>
                             <td>
-                                <a href="{% url 'documents:detail' doc.pk %}" 
-                                   class="btn btn-sm btn-info">
-                                    Xem
+                                <a href="{% url 'documents:detail' doc.pk %}" class="btn btn-sm btn-info text-white rounded-pill px-3 shadow-sm">
+                                    <i class="bi bi-eye"></i> Xem
                                 </a>
-                                <a href="{% url 'documents:delete' doc.pk %}" 
-                                   class="btn btn-sm btn-danger">
-                                    Xóa
+                                <a href="{% url 'documents:delete' doc.pk %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm ms-1">
+                                    <i class="bi bi-trash"></i> Xóa
                                 </a>
                             </td>
                         </tr>
@@ -87,10 +85,66 @@
             <div class="text-center py-5">
                 <p class="text-muted">Chưa có tài liệu nào. Hãy upload file đầu tiên!</p>
                 <a href="{% url 'documents:upload' %}" class="btn btn-primary">
-                    📤 Upload File Ngay
+                    <i class="bi bi-upload"></i> Upload File Ngay
                 </a>
             </div>
         {% endif %}
+    </div>
+</div>
+
+<div class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0 fw-bold text-secondary">
+            <i class="bi bi-clock-history text-primary"></i> Lịch sử làm bài gần đây
+        </h3>
+        <a href="{% url 'quizzes:list' %}" class="btn btn-outline-primary btn-sm">Xem tất cả bài thi</a>
+    </div>
+    
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Tên bài thi</th>
+                            <th>Điểm số (Hệ 10)</th>
+                            <th>Kết quả</th>
+                            <th>Thời gian nộp</th>
+                            <th class="text-center">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attempt in recent_attempts %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">{{ attempt.quiz.title }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if attempt.score >= 8 %}bg-success
+                                    {% elif attempt.score >= 5 %}bg-warning text-dark
+                                    {% else %}bg-danger{% endif %} fs-6 shadow-sm">
+                                    {{ attempt.score }}
+                                </span>
+                            </td>
+                            <td class="text-muted">{{ attempt.correct_answers }}/{{ attempt.total_questions }} câu đúng</td>
+                            <td class="text-muted">{{ attempt.completed_at|date:"H:i - d/m/Y" }}</td>
+                            <td class="text-center">
+                                <a href="{% url 'quizzes:result' attempt.id %}" class="btn btn-sm btn-success text-white rounded-pill px-3 shadow-sm">
+                                    <i class="bi bi-journal-check"></i> Xem lại
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                                Bạn chưa có lịch sử làm bài nào. Hãy mở một tài liệu và bắt đầu tạo Quiz nhé!
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

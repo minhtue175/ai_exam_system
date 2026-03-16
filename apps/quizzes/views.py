@@ -3,7 +3,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Quiz
 from apps.documents.models import Document
-from .services.quiz_service import QuizService        # Đã bỏ import GeminiQuizGenerator vì Service lo hết rồi
+from .services.quiz_service import QuizService     
+from django.utils import timezone
+from .models import Quiz, UserQuizAttempt # Thêm UserQuizAttempt vào đây
+
+# Đã bỏ import GeminiQuizGenerator vì Service lo hết rồi
 
 # ==========================================
 # PHASE 4: QUIZ GENERATION & MANAGEMENT
@@ -56,35 +60,99 @@ def quiz_detail_view(request, pk):
     }
     return render(request, 'quizzes/detail.html', context)
 
+# Mở apps/quizzes/views.py tìm và sửa hàm này:
+
 def quiz_delete_view(request, pk):
-    """Xóa bộ đề (Bảo mật bằng method POST)"""
+    """Xóa bộ đề"""
     quiz = get_object_or_404(Quiz, pk=pk)
     
-    # Bảo mật: Chỉ người tạo mới được xóa. 
-    # Nếu đang test chưa có phần đăng nhập, bạn có thể comment 2 dòng if này lại
-    if getattr(request.user, 'is_authenticated', False) and request.user != quiz.creator:
+    # Đã sửa: quiz.creator thành quiz.user
+    if request.user != quiz.user:
         messages.error(request, "Bạn không có quyền xóa bộ đề này.")
         return redirect('quizzes:list')
 
     if request.method == 'POST':
         quiz.delete()
-        messages.success(request, f"Đã xóa thành công bộ đề: {quiz.title}")
+        messages.success(request, "Đã xóa bộ đề thành công!")
         return redirect('quizzes:list')
-    
-    return render(request, 'quizzes/quiz_confirm_delete.html', {'quiz': quiz})
+
+    return redirect('quizzes:detail', pk=pk)
 
 
 # ==========================================
-# PHASE 5: EXAM & GRADING (DUMMY VIEWS)
+# PHASE 5: EXAM & GRADING
 # ==========================================
-# Ghi chú: Các hàm này hiện tại chỉ làm nhiệm vụ "giữ chỗ" để Server không báo lỗi.
+
 
 def quiz_take_view(request, pk):
-    """Giao diện làm bài thi (Sẽ code logic xáo trộn câu hỏi vào ngày mai)"""
+    """Giao diện làm bài thi và xử lý chấm điểm"""
     quiz = get_object_or_404(Quiz, pk=pk)
-    return render(request, 'quizzes/quiz_take.html', {'quiz': quiz})
+    
+    # 1. XỬ LÝ KHI NGƯỜI DÙNG BẤM "NỘP BÀI" (POST)
+    if request.method == 'POST':
+        correct_answers = 0
+        total_questions = quiz.num_questions
+        user_answers = {}  # Lưu id_câu_hỏi: đáp_án_chọn
+        
+        # Duyệt qua toàn bộ câu hỏi để chấm điểm
+        questions = quiz.questions.all()
+        for q in questions:
+            # Lấy đáp án user chọn từ form (name là question_1, question_2...)
+            selected_idx = request.POST.get(f'question_{q.id}')
+            
+            if selected_idx is not None:
+                selected_idx = int(selected_idx)
+                user_answers[str(q.id)] = selected_idx
+                
+                # So sánh với đáp án đúng của AI
+                if selected_idx == q.correct_answer:
+                    correct_answers += 1
+                    
+        # Tính điểm hệ 10
+        score = (correct_answers / total_questions) * 10 if total_questions > 0 else 0
+        
+        # Lưu lịch sử làm bài vào Database (Model chúng ta vừa tạo)
+        attempt = UserQuizAttempt.objects.create(
+            quiz=quiz,
+            user=request.user,
+            answers=user_answers,
+            total_questions=total_questions,
+            correct_answers=correct_answers,
+            score=score,
+            completed_at=timezone.now()
+        )
+        
+        messages.success(request, "Đã nộp bài thành công! Xem kết quả chi tiết bên dưới.")
+        return redirect('quizzes:result', attempt_id=attempt.id)
+
+    # 2. XỬ LÝ KHI NGƯỜI DÙNG VÀO TRANG (GET)
+    # Roadmap: Làm bài thi (shuffle câu hỏi). Lệnh order_by('?') sẽ trộn ngẫu nhiên câu hỏi.
+    questions = quiz.questions.all().order_by('?')
+    
+    return render(request, 'quizzes/quiz_take.html', {
+        'quiz': quiz,
+        'questions': questions
+    })
 
 def quiz_result_view(request, attempt_id):
-    """Giao diện xem kết quả (Sẽ code logic chấm điểm vào ngày mai)"""
-    # attempt = get_object_or_404(UserQuizAttempt, id=attempt_id)
-    return render(request, 'quizzes/quiz_result.html', {'attempt_id': attempt_id})
+    """Hiển thị kết quả, chấm câu đúng/sai và hiện giải thích"""
+    # Lấy bài làm ra (Bảo mật: Chỉ cho phép người làm bài xem lại kết quả của mình)
+    attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
+    
+    # Lấy lại danh sách câu hỏi theo đúng thứ tự ban đầu để hiển thị
+    questions = attempt.quiz.questions.all().order_by('order')
+    
+    # Đóng gói dữ liệu để truyền ra Template HTML xử lý cho dễ
+    results_data = []
+    for q in questions:
+        user_choice = attempt.answers.get(str(q.id))
+        results_data.append({
+            'question': q,
+            'user_choice': user_choice,
+            'is_correct': user_choice == q.correct_answer
+        })
+        
+    return render(request, 'quizzes/quiz_result.html', {
+        'attempt': attempt,
+        'results_data': results_data
+    })

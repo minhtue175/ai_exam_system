@@ -2,6 +2,10 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 
+# Import các Model cần thiết
+from apps.documents.models import Document
+from apps.quizzes.models import UserQuizAttempt
+
 def home_view(request):
     """Home page"""
     if request.user.is_authenticated:
@@ -10,10 +14,9 @@ def home_view(request):
 
 @login_required
 def dashboard_view(request):
-    """Dashboard - Hiển thị danh sách file"""
-    from apps.documents.models import Document
+    """Dashboard - Hiển thị danh sách file và Lịch sử thi"""
     
-    # Lấy tất cả documents của user
+    # 1. LẤY DANH SÁCH TÀI LIỆU
     documents = Document.objects.filter(user=request.user)
     
     # Tìm kiếm
@@ -25,10 +28,16 @@ def dashboard_view(request):
         )
     
     documents = documents.order_by('-created_at')
+
+    # 2. LẤY LỊCH SỬ LÀM BÀI THI (5 bài gần nhất)
+    recent_attempts = UserQuizAttempt.objects.filter(
+        user=request.user
+    ).select_related('quiz').order_by('-completed_at')[:5]
     
     context = {
         'documents': documents,
         'total_documents': documents.count(),
         'search_query': search_query,
+        'recent_attempts': recent_attempts,  # Đưa dữ liệu điểm ra HTML
     }
     return render(request, 'core/dashboard.html', context)
