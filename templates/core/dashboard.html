@@ -1,150 +1,170 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Dashboard | Fluesy Exam{% endblock %}
+
+{% block main_classes %}has-right-sidebar{% endblock %}
 
 {% block content %}
-<h2>📊 Dashboard - Tài liệu của tôi</h2>
-
-<div class="row mb-3">
-    <div class="col-md-6">
-        <form method="get" action="{% url 'core:dashboard' %}">
-            <input type="text" 
-                   name="search" 
-                   class="form-control" 
-                   placeholder="Tìm kiếm tài liệu..." 
-                   value="{{ request.GET.search }}">
-        </form>
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="input-group" style="background: #fff; border-radius: 12px; padding: 5px 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">
+            <span class="input-group-text border-0 bg-transparent text-muted"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control border-0 shadow-none" placeholder="Search your quizzes, documents here...">
+        </div>
     </div>
-    <div class="col-md-6 text-end">
-        <a href="{% url 'documents:upload' %}" class="btn btn-primary">
-            <i class="bi bi-upload"></i> Upload File
+</div>
+
+<div class="card-custom mb-5 p-5 text-white position-relative overflow-hidden" style="background: var(--primary-color);">
+    <i class="bi bi-stars position-absolute text-white opacity-25" style="font-size: 150px; top: -30px; right: 20px;"></i>
+    
+    <div class="position-relative z-1">
+        <span class="badge bg-white text-dark mb-3 px-3 py-2 rounded-pill fw-bold">ONLINE SYSTEM</span>
+        <h2 class="fw-bold mb-3 display-6">Sharpen Your Skills With<br>AI-Powered Quizzes</h2>
+        <a href="{% url 'documents:upload' %}" class="btn btn-dark rounded-pill px-4 py-2 mt-2 fw-bold shadow-sm">
+            Join Now <i class="bi bi-play-circle ms-1"></i>
         </a>
     </div>
 </div>
 
-<div class="card mb-5 shadow-sm">
-    <div class="card-body">
-        <p>Tổng số tài liệu: <strong>{{ total_documents }}</strong></p>
-        
-        {% if documents %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Tên file</th>
-                            <th>Loại</th>
-                            <th>Kích thước</th>
-                            <th>Trạng thái</th>
-                            <th>Ngày tải lên</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for doc in documents %}
-                        <tr>
-                            <td>
-                                <i class="bi bi-file-earmark-text text-primary"></i>
-                                {{ doc.filename }}
-                            </td>
-                            <td>
-                                {% if 'pdf' in doc.file_type %}
-                                    <span class="badge bg-danger">PDF</span>
-                                {% elif 'word' in doc.file_type or 'document' in doc.file_type %}
-                                    <span class="badge bg-primary">Word</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ doc.file_type }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ doc.file_size|filesizeformat }}</td>
-                            <td>
-                                {% if doc.status == 'completed' %}
-                                    <span class="badge bg-success">Hoàn thành</span>
-                                {% elif doc.status == 'processing' %}
-                                    <span class="badge bg-warning text-dark">Đang xử lý</span>
-                                {% elif doc.status == 'failed' %}
-                                    <span class="badge bg-danger">Lỗi</span>
-                                {% else %}
-                                    <span class="badge bg-info">Đã tải lên</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ doc.created_at|date:"d/m/Y H:i" }}</td>
-                            <td>
-                                <a href="{% url 'documents:detail' doc.pk %}" class="btn btn-sm btn-info text-white rounded-pill px-3 shadow-sm">
-                                    <i class="bi bi-eye"></i> Xem
-                                </a>
-                                <a href="{% url 'documents:delete' doc.pk %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm ms-1">
-                                    <i class="bi bi-trash"></i> Xóa
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <div class="text-center py-5">
-                <p class="text-muted">Chưa có tài liệu nào. Hãy upload file đầu tiên!</p>
-                <a href="{% url 'documents:upload' %}" class="btn btn-primary">
-                    <i class="bi bi-upload"></i> Upload File Ngay
-                </a>
-            </div>
-        {% endif %}
+<h4 class="fw-bold mb-4">Continue Practicing</h4>
+<div class="card-custom p-4 mb-5">
+    <div class="table-responsive">
+        <table class="table table-borderless table-custom align-middle">
+            <thead>
+                <tr>
+                    <th>Tên bài thi</th>
+                    <th>Điểm số</th>
+                    <th>Kết quả</th>
+                    <th>Thời gian</th>
+                    <th class="text-end">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for attempt in recent_attempts %}
+                <tr>
+                    <td class="fw-bold text-dark">
+                        <i class="bi bi-play-btn-fill text-primary me-2 fs-5"></i> {{ attempt.quiz.title }}
+                    </td>
+                    <td>
+                        <span class="badge rounded-pill px-3 py-2 
+                            {% if attempt.score >= 8 %}bg-success
+                            {% elif attempt.score >= 5 %}bg-warning text-dark
+                            {% else %}bg-danger{% endif %}">
+                            {{ attempt.score }} / 10
+                        </span>
+                    </td>
+                    <td class="text-muted">{{ attempt.correct_answers }}/{{ attempt.total_questions }} đúng</td>
+                    <td class="text-muted">{{ attempt.completed_at|date:"d/m/Y" }}</td>
+                    <td class="text-end">
+                        <a href="{% url 'quizzes:result' attempt.id %}" class="btn btn-sm btn-light rounded-pill px-3 text-primary fw-bold">See All</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="5" class="text-center text-muted py-4">Chưa có bài thi nào gần đây.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<div class="mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0 fw-bold text-secondary">
-            <i class="bi bi-clock-history text-primary"></i> Lịch sử làm bài gần đây
-        </h3>
-        <a href="{% url 'quizzes:list' %}" class="btn btn-outline-primary btn-sm">Xem tất cả bài thi</a>
+<h4 class="fw-bold mb-4">Your Documents</h4>
+<div class="card-custom p-4 mb-4">
+    <div class="table-responsive">
+        <table class="table table-borderless table-custom align-middle">
+            <thead>
+                <tr>
+                    <th>Tên file</th>
+                    <th>Loại</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for doc in documents %}
+                <tr>
+                    <td class="fw-bold">
+                        {% if 'pdf' in doc.file_type %}
+                            <i class="bi bi-file-earmark-pdf-fill text-danger me-2 fs-5"></i>
+                        {% else %}
+                            <i class="bi bi-file-earmark-word-fill text-primary me-2 fs-5"></i>
+                        {% endif %}
+                        {{ doc.filename }}
+                    </td>
+                    <td><span class="badge bg-light text-dark px-3 py-2 rounded-pill">{{ doc.file_type|upper }}</span></td>
+                    <td>
+                        <span class="badge px-3 py-2 rounded-pill 
+                            {% if doc.status == 'completed' %}bg-success-subtle text-success
+                            {% else %}bg-warning-subtle text-warning{% endif %}">
+                            {{ doc.status|title }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'documents:detail' doc.pk %}" class="text-decoration-none text-primary fw-bold fs-6">Show Details</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="4" class="text-center text-muted py-4">Chưa có tài liệu nào.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="ps-4">Tên bài thi</th>
-                            <th>Điểm số (Hệ 10)</th>
-                            <th>Kết quả</th>
-                            <th>Thời gian nộp</th>
-                            <th class="text-center">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for attempt in recent_attempts %}
-                        <tr>
-                            <td class="ps-4 fw-bold text-dark">{{ attempt.quiz.title }}</td>
-                            <td>
-                                <span class="badge 
-                                    {% if attempt.score >= 8 %}bg-success
-                                    {% elif attempt.score >= 5 %}bg-warning text-dark
-                                    {% else %}bg-danger{% endif %} fs-6 shadow-sm">
-                                    {{ attempt.score }}
-                                </span>
-                            </td>
-                            <td class="text-muted">{{ attempt.correct_answers }}/{{ attempt.total_questions }} câu đúng</td>
-                            <td class="text-muted">{{ attempt.completed_at|date:"H:i - d/m/Y" }}</td>
-                            <td class="text-center">
-                                <a href="{% url 'quizzes:result' attempt.id %}" class="btn btn-sm btn-success text-white rounded-pill px-3 shadow-sm">
-                                    <i class="bi bi-journal-check"></i> Xem lại
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
-                                Bạn chưa có lịch sử làm bài nào. Hãy mở một tài liệu và bắt đầu tạo Quiz nhé!
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+</div>
+{% endblock %}
+
+
+{% block right_sidebar %}
+<div class="right-sidebar">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold mb-0">Your Profile</h5>
+        <i class="bi bi-three-dots-vertical text-muted cursor-pointer"></i>
+    </div>
+
+    <div class="text-center mb-4">
+        <div class="position-relative d-inline-block p-1 rounded-circle" style="border: 3px solid var(--primary-color); border-top-color: transparent; border-left-color: transparent; transform: rotate(45deg);">
+            <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=f0ebff&color=6a35ff&size=100" 
+                 class="rounded-circle" style="transform: rotate(-45deg); width: 100px; height: 100px; object-fit: cover;">
+        </div>
+        <h4 class="fw-bold mt-3 mb-1">Chào buổi sáng,</h4>
+        <p class="text-muted fs-6">Tiếp tục học tập và đạt mục tiêu nhé!</p>
+    </div>
+
+    <div class="d-flex justify-content-center gap-3 mb-5">
+        <button class="btn btn-light rounded-circle p-2 shadow-sm text-muted"><i class="bi bi-bell fs-5"></i></button>
+        <button class="btn btn-light rounded-circle p-2 shadow-sm text-muted"><i class="bi bi-envelope fs-5"></i></button>
+        <button class="btn btn-light rounded-circle p-2 shadow-sm text-muted"><i class="bi bi-bookmark fs-5"></i></button>
+    </div>
+
+    <div class="mb-5">
+        <h6 class="fw-bold mb-3">Thống kê điểm số</h6>
+        <div class="d-flex align-items-end justify-content-between" style="height: 120px;">
+            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 40%; position: relative;">
+                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 50%;"></div>
+            </div>
+            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 60%; position: relative;">
+                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 70%;"></div>
+            </div>
+            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 100%; position: relative;">
+                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 80%;"></div>
+            </div>
+            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 70%; position: relative;">
+                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 60%;"></div>
+            </div>
+            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 50%; position: relative;">
+                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 40%;"></div>
             </div>
         </div>
+    </div>
+
+    <h6 class="fw-bold mb-3 d-flex justify-content-between">
+        My Achievements <i class="bi bi-plus-circle text-muted"></i>
+    </h6>
+    <div class="d-flex align-items-center mb-3">
+        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3"><i class="bi bi-award-fill fs-5"></i></div>
+        <div>
+            <h6 class="fw-bold mb-0">Hoàn thành 5 Quiz</h6>
+            <small class="text-muted">Software Developer</small>
+        </div>
+        <button class="btn btn-sm btn-primary rounded-pill ms-auto px-3" style="background: var(--primary-color);">Xem</button>
     </div>
 </div>
 {% endblock %}

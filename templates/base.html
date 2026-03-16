@@ -3,25 +3,186 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}AI Exam System{% endblock %}</title>
+    <title>{% block title %}Fluesy Support Exam{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        /* Tông màu chủ đạo Coursue & Fluesy */
+        :root {
+            --primary-color: #6a35ff;
+            --primary-light: #f0ebff;
+            --text-main: #2b2b36;
+            --text-muted: #82828b;
+            --bg-body: #fafafc;
+            --bg-card: #ffffff;
+            --fluesy-grad: linear-gradient(90deg, #1E3B70 0%, #29539B 100%, #17b3a6 200%);
+        }
+
+        body {
+            background-color: var(--bg-body);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* --- LEFT SIDEBAR --- */
+        .left-sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: var(--bg-card);
+            padding: 25px 20px;
+            border-right: 1px solid #f0f0f5;
+            z-index: 1000;
+        }
+
+        .brand-logo {
+            font-size: 28px;
+            font-weight: 800;
+            background: var(--fluesy-grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 40px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .nav-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-item-custom {
+            display: flex;
+            align-items: center;
+            padding: 12px 18px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 12px;
+            margin-bottom: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item-custom i {
+            font-size: 20px;
+            margin-right: 15px;
+        }
+
+        .nav-item-custom:hover {
+            color: var(--primary-color);
+            background-color: #f8f9fa;
+        }
+
+        /* Nút đang Active */
+        .nav-item-custom.active {
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+        }
+
+        /* Nút Logout nằm dưới cùng */
+        .logout-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 20px;
+            width: calc(100% - 40px);
+            color: #dc3545;
+        }
+        .logout-btn:hover {
+            background-color: #ffeef0;
+            color: #dc3545;
+        }
+
+        /* --- MAIN CONTENT --- */
+        .main-wrapper {
+            margin-left: 260px;
+            padding: 30px 40px;
+            min-height: 100vh;
+            transition: all 0.3s ease;
+        }
+        
+        /* Class này dùng để chừa chỗ cho Right Sidebar (Dashboard) */
+        .main-wrapper.has-right-sidebar {
+            margin-right: 320px;
+        }
+
+        /* --- RIGHT SIDEBAR --- */
+        .right-sidebar {
+            width: 320px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            right: 0;
+            background: var(--bg-card);
+            padding: 30px 25px;
+            border-left: 1px solid #f0f0f5;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        /* Custom Cards & Tables */
+        .card-custom {
+            background: var(--bg-card);
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+        }
+        .table-custom th {
+            color: var(--text-muted);
+            font-weight: 600;
+            border-bottom: 2px solid #f0f0f5;
+            padding-bottom: 15px;
+        }
+        .table-custom td {
+            vertical-align: middle;
+            border-bottom: 1px solid #f0f0f5;
+            padding: 15px 0;
+        }
+    </style>
 </head>
 <body>
-    {% include 'includes/navbar.html' %}
-    
-    <div class="container mt-4">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-        
+
+    <div class="left-sidebar">
+        <a href="/" class="brand-logo">
+            <i class="bi bi-bezier2"></i> Fluesy
+        </a>
+
+        <div class="text-muted text-uppercase fw-bold mb-3" style="font-size: 11px; letter-spacing: 1px;">Tổng quan</div>
+        <ul class="nav-menu">
+            <li>
+                <a href="{% url 'core:dashboard' %}" class="nav-item-custom {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'quizzes:list' %}" class="nav-item-custom {% if request.resolver_match.url_name == 'list' %}active{% endif %}">
+                    <i class="bi bi-journal-check"></i> List Quizzes
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'documents:upload' %}" class="nav-item-custom {% if request.resolver_match.url_name == 'upload' %}active{% endif %}">
+                    <i class="bi bi-cloud-arrow-up"></i> Upload Tài liệu
+                </a>
+            </li>
+        </ul>
+
+        <a href="#" class="nav-item-custom logout-btn">
+            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+        </a>
+    </div>
+
+    <div class="main-wrapper {% block main_classes %}has-right-sidebar{% endblock %}">
         {% block content %}{% endblock %}
     </div>
-    
+
+    {% block right_sidebar %}{% endblock %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
