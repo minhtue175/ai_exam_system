@@ -1,21 +1,56 @@
 {% extends 'base.html' %}
 
-{% block title %}Đăng ký{% endblock %}
+{% block title %}Đăng ký | Fluesy Exam{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h3>Đăng ký tài khoản</h3>
-            </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form.as_p }}
-                    <button type="submit" class="btn btn-primary">Đăng ký</button>
-                </form>
-            </div>
+<style>
+    /* Kế thừa style giống hệt trang Đăng nhập */
+    .auth-card {
+        width: 100%;
+        max-width: 450px; /* To hơn một chút vì form đăng ký dài hơn */
+        margin: 5vh auto;
+        border-radius: 20px;
+        box-shadow: 0 10px 40px rgba(106, 53, 255, 0.08);
+    }
+    .auth-form p { margin-bottom: 20px; }
+    .auth-form label {
+        font-weight: 600; color: var(--text-main); margin-bottom: 8px; display: block; font-size: 14px;
+    }
+    .auth-form input[type="text"],
+    .auth-form input[type="password"],
+    .auth-form input[type="email"] {
+        width: 100%; padding: 14px 18px; border-radius: 12px; border: 1.5px solid #e2e2ec;
+        background-color: #fcfcfd; font-size: 15px; transition: all 0.3s ease;
+    }
+    .auth-form input:focus {
+        border-color: var(--primary-color); background-color: #fff; box-shadow: 0 0 0 4px var(--primary-light); outline: none;
+    }
+    .auth-form .helptext { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; display: block; }
+    .auth-form .errorlist { font-size: 13px; color: #dc3545; list-style: none; padding: 0; margin-top: 5px; }
+</style>
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 85vh;">
+    <div class="card-custom auth-card p-5 bg-white">
+        
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-dark mb-2">Tạo tài khoản mới</h3>
+            <p class="text-muted" style="font-size: 15px;">Tham gia Fluesy để trải nghiệm AI tạo đề thi trắc nghiệm siêu tốc</p>
+        </div>
+
+        <form method="POST" class="auth-form">
+            {% csrf_token %}
+            
+            {{ form.as_p }}
+
+            <button type="submit" class="btn w-100 mt-3 text-white shadow-sm" style="border-radius: 12px; padding: 14px; font-weight: 600; background: var(--primary-color); border: none; font-size: 16px;">
+                Đăng ký tài khoản
+            </button>
+        </form>
+
+        <div class="text-center mt-4 pt-2 border-top">
+            <p class="text-muted mb-0" style="font-size: 14.5px;">Đã có tài khoản? 
+                <a href="{% url 'users:login' %}" class="fw-bold text-decoration-none" style="color: var(--primary-color);">Đăng nhập</a>
+            </p>
         </div>
     </div>
 </div>

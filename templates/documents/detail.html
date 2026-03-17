@@ -1,149 +1,121 @@
 {% extends 'base.html' %}
-
-{% block title %}{{ document.filename }}{% endblock %}
+{% block title %}Chi tiết: {{ document.filename }} | Fluesy Exam{% endblock %}
+{% block main_classes %}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}">Dashboard</a></li>
-            <li class="breadcrumb-item active">{{ document.filename }}</li>
-        </ol>
-    </nav>
-    
-    <!-- Document Info Card -->
-    <div class="card shadow mb-4">
-        <div class="card-header bg-primary text-white">
-            <h3 class="mb-0">📄 Chi Tiết Tài Liệu</h3>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
-                    <table class="table table-borderless">
-                        <tr>
-                            <th width="150">Tên file:</th>
-                            <td><strong>{{ document.filename }}</strong></td>
-                        </tr>
-                        <tr>
-                            <th>Loại file:</th>
-                            <td>
-                                {% if 'pdf' in document.file_type %}
-                                    <span class="badge bg-danger">PDF</span>
-                                {% elif 'word' in document.file_type or 'document' in document.file_type %}
-                                    <span class="badge bg-primary">Word</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">{{ document.file_type }}</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Kích thước:</th>
-                            <td>{{ document.file_size|filesizeformat }}</td>
-                        </tr>
-                    </table>
-                </div>
-                
-                <div class="col-md-6">
-                    <table class="table table-borderless">
-                        <tr>
-                            <th width="150">Trạng thái:</th>
-                            <td>
-                                {% if document.status == 'completed' %}
-                                    <span class="badge bg-success">✅ Hoàn thành</span>
-                                {% elif document.status == 'processing' %}
-                                    <span class="badge bg-warning">⏳ Đang xử lý</span>
-                                {% elif document.status == 'failed' %}
-                                    <span class="badge bg-danger">❌ Lỗi</span>
-                                {% else %}
-                                    <span class="badge bg-info">📤 Đã tải lên</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>Số từ:</th>
-                            <td><strong>{{ word_count }}</strong> từ</td>
-                        </tr>
-                        <tr>
-                            <th>Số dòng:</th>
-                            <td><strong>{{ line_count }}</strong> dòng</td>
-                        </tr>
-                        <tr>
-                            <th>Ngày tải lên:</th>
-                            <td>{{ document.created_at|date:"d/m/Y H:i" }}</td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'core:dashboard' %}" class="text-decoration-none" style="color: var(--primary-color);">Dashboard</a></li>
+        <li class="breadcrumb-item active fw-bold">{{ document.filename }}</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-5 mb-4">
+        <div class="card-custom p-4 h-100">
+            <h5 class="fw-bold mb-4 border-bottom pb-3"><i class="bi bi-file-earmark-text me-2" style="color: var(--primary-color);"></i>Chi Tiết Tài Liệu</h5>
             
-            <!-- Action Buttons -->
-            <div class="d-flex gap-2 mt-3">
-                <!-- NÚT TẠO QUIZ -->
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <span class="text-muted">Tên file:</span>
+                <strong class="text-truncate ms-2" style="max-width: 180px;" title="{{ document.filename }}">{{ document.filename }}</strong>
+            </div>
+            <div class="mb-3 d-flex justify-content-between">
+                <span class="text-muted">Loại file:</span>
+                <span class="badge bg-light text-dark px-3 py-2 rounded-pill">{{ document.file_type|upper }}</span>
+            </div>
+            <div class="mb-3 d-flex justify-content-between">
+                <span class="text-muted">Kích thước:</span>
+                <strong>{{ document.file_size|filesizeformat }}</strong>
+            </div>
+            <div class="mb-3 d-flex justify-content-between">
+                <span class="text-muted">Số từ:</span>
+                <strong>{{ document.word_count|default:0 }} từ</strong>
+            </div>
+            <div class="mb-3 d-flex justify-content-between">
+                <span class="text-muted">Trạng thái:</span>
+                {% if document.status == 'completed' %}
+                    <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">Hoàn thành</span>
+                {% elif document.status == 'processing' %}
+                    <span class="badge bg-warning-subtle text-warning px-3 py-2 rounded-pill">Đang xử lý</span>
+                {% elif document.status == 'failed' %}
+                    <span class="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill">Lỗi</span>
+                {% else %}
+                    <span class="badge bg-info-subtle text-info px-3 py-2 rounded-pill">Đã tải lên</span>
+                {% endif %}
+            </div>
+            <div class="mb-4 d-flex justify-content-between">
+                <span class="text-muted">Ngày tải lên:</span>
+                <span class="fs-6">{{ document.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+
+            <hr class="my-4">
+            <div class="d-grid gap-3">
+                
                 {% if document.status == 'completed' and document.extracted_text %}
-                    <a href="{% url 'quizzes:create' document.pk %}" 
-                       class="btn btn-primary btn-lg">
-                        <i class="bi bi-magic"></i> 🤖 Tạo Quiz Bằng AI
+                    <a href="{% url 'quizzes:create' document.pk %}" class="btn text-white btn-lg fw-bold rounded-pill shadow-sm" style="background: var(--fluesy-grad);">
+                        <i class="bi bi-magic me-1"></i> Tạo Quiz Bằng AI
                     </a>
                 {% else %}
-                    <button class="btn btn-secondary btn-lg" disabled title="Cần trích xuất văn bản trước">
+                    <button class="btn btn-secondary btn-lg fw-bold rounded-pill" disabled title="Cần trích xuất văn bản trước">
                         <i class="bi bi-magic"></i> Tạo Quiz (Chưa sẵn sàng)
                     </button>
                 {% endif %}
                 
-                <a href="{{ document.file_path.url }}" 
-                   class="btn btn-success" 
-                   download>
-                    <i class="bi bi-download"></i> Tải về
-                </a>
-                
-                <a href="{% url 'documents:extract' document.pk %}" 
-                   class="btn btn-warning">
-                    <i class="bi bi-arrow-repeat"></i> Trích xuất lại
-                </a>
-                
-                <a href="{% url 'core:dashboard' %}" 
-                   class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Quay lại
-                </a>
-                
-                <a href="{% url 'documents:delete' document.pk %}" 
-                   class="btn btn-danger ms-auto">
-                    <i class="bi bi-trash"></i> Xóa
-                </a>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ document.file_path.url }}" class="btn btn-light fw-bold rounded-pill flex-grow-1 text-success shadow-sm" download>
+                        <i class="bi bi-download"></i> Tải về
+                    </a>
+                    
+                    <a href="{% url 'documents:extract' document.pk %}" class="btn btn-light fw-bold rounded-pill flex-grow-1 text-warning shadow-sm">
+                        <i class="bi bi-arrow-repeat"></i> Trích xuất lại
+                    </a>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2 mt-1">
+                    <a href="{% url 'core:dashboard' %}" class="btn btn-light fw-bold rounded-pill flex-grow-1 text-muted shadow-sm">
+                        <i class="bi bi-arrow-left"></i> Quay lại
+                    </a>
+                    
+                    <form action="{% url 'documents:delete' document.pk %}" method="POST" class="m-0 flex-grow-1" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-outline-danger fw-bold rounded-pill w-100 shadow-sm"><i class="bi bi-trash"></i> Xóa</button>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Extracted Text Card -->
-    <div class="card shadow">
-        <div class="card-header bg-info text-white">
-            <h4 class="mb-0">📝 Nội Dung Đã Trích Xuất</h4>
-        </div>
-        <div class="card-body">
-            {% if document.extracted_text %}
-                <div class="border rounded p-3 bg-light" style="max-height: 500px; overflow-y: auto;">
-                    <pre class="mb-0" style="white-space: pre-wrap; font-family: 'Courier New', monospace;">{{ document.extracted_text }}</pre>
-                </div>
+
+    <div class="col-lg-7 mb-4">
+        <div class="card-custom p-4 h-100 flex-column d-flex">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                <h5 class="fw-bold mb-0"><i class="bi bi-card-text me-2" style="color: var(--primary-color);"></i>Nội Dung Đã Trích Xuất</h5>
                 
-                <!-- Copy Button -->
-                <button class="btn btn-sm btn-outline-primary mt-3" onclick="copyText()">
-                    <i class="bi bi-clipboard"></i> Copy văn bản
-                </button>
-            {% else %}
-                <div class="alert alert-warning">
-                    <strong>⚠️ Chưa có nội dung:</strong>
-                    {% if document.status == 'failed' %}
-                        Không thể trích xuất văn bản từ file này. Vui lòng thử lại hoặc kiểm tra file.
-                    {% elif document.status == 'processing' %}
-                        Đang xử lý... Vui lòng chờ trong giây lát.
-                    {% else %}
-                        File chưa được xử lý. 
-                        <a href="{% url 'documents:extract' document.pk %}" class="alert-link">
-                            Click để trích xuất ngay
-                        </a>
-                    {% endif %}
-                </div>
-            {% endif %}
+                {% if document.extracted_text %}
+                    <button class="btn btn-sm text-primary fw-bold" style="background: var(--primary-light); border-radius: 8px;" onclick="copyText()">
+                        <i class="bi bi-clipboard"></i> Copy
+                    </button>
+                {% endif %}
+            </div>
+            
+            <div class="bg-light rounded p-4 flex-grow-1 overflow-auto" style="max-height: 550px; border: 1px solid #f0f0f5;">
+                {% if document.extracted_text %}
+                    <pre style="white-space: pre-wrap; font-family: inherit; font-size: 14.5px; line-height: 1.6; color: #444;">{{ document.extracted_text }}</pre>
+                {% else %}
+                    <div class="alert" style="background: #fff3cd; color: #856404; border-radius: 12px; border: none;">
+                        <strong class="d-block mb-2"><i class="bi bi-exclamation-triangle-fill"></i> Chưa có nội dung:</strong>
+                        {% if document.status == 'failed' %}
+                            Không thể trích xuất văn bản từ file này. Vui lòng thử lại hoặc kiểm tra file.
+                        {% elif document.status == 'processing' %}
+                            <span class="spinner-border spinner-border-sm me-1"></span> Đang xử lý... Vui lòng chờ trong giây lát.
+                        {% else %}
+                            File chưa được xử lý. 
+                            <a href="{% url 'documents:extract' document.pk %}" class="fw-bold text-decoration-underline" style="color: #856404;">
+                                Click để trích xuất ngay
+                            </a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>

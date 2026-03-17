@@ -1,51 +1,49 @@
 {% extends 'base.html' %}
-
-{% block title %}Upload Tài Liệu{% endblock %}
+{% block title %}Upload Tài Liệu | Fluesy Exam{% endblock %}
+{% block main_classes %}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
     <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="mb-0">📤 Upload Tài Liệu</h3>
+        <div class="col-md-8 col-lg-6">
+            <div class="d-flex align-items-center mb-4">
+                <h3 class="fw-bold mb-0"><i class="bi bi-cloud-upload me-2" style="color: var(--primary-color);"></i>Tải Lên Tài Liệu</h3>
+            </div>
+
+            <div class="card-custom p-5">
+                <div class="alert border-0 mb-4" style="background: var(--primary-light); color: var(--primary-color); border-radius: 12px;">
+                    <h6 class="fw-bold"><i class="bi bi-info-circle-fill me-2"></i>Lưu ý:</h6>
+                    <ul class="mb-0 fs-6">
+                        <li>Chấp nhận định dạng: <strong>PDF, DOC, DOCX</strong></li>
+                        <li>Kích thước tối đa: <strong>10MB</strong></li>
+                        <li>Hệ thống sẽ tự động trích xuất văn bản từ file để tạo Quiz.</li>
+                    </ul>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info">
-                        <strong>📌 Lưu ý:</strong>
-                        <ul class="mb-0 mt-2">
-                            <li>Chấp nhận file: <strong>PDF, DOC, DOCX</strong></li>
-                            <li>Kích thước tối đa: <strong>10MB</strong></li>
-                            <li>Hệ thống sẽ tự động trích xuất văn bản từ file</li>
-                        </ul>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="id_file_path" class="form-label fw-bold">📄 Chọn file tài liệu</label>
+                        
+                        <div class="form-control form-control-lg bg-light border-0" style="border-radius: 12px; padding-top: 10px;">
+                            {{ form.file_path }}
+                        </div>
+                        
+                        {% if form.file_path.errors %}
+                            <div class="text-danger mt-2 fs-6 fw-bold">
+                                <i class="bi bi-exclamation-triangle"></i> {{ form.file_path.errors|striptags }}
+                            </div>
+                        {% endif %}
                     </div>
                     
-                    <form method="post" enctype="multipart/form-data">
-                        {% csrf_token %}
-                        
-                        <div class="mb-4">
-                            <label for="id_file_path" class="form-label fw-bold">
-                                📄 Chọn file tài liệu
-                            </label>
-                            {{ form.file_path }}
-                            
-                            {% if form.file_path.errors %}
-                                <div class="text-danger mt-2">
-                                    {{ form.file_path.errors }}
-                                </div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-upload"></i> Upload và Xử Lý
-                            </button>
-                            <a href="{% url 'core:dashboard' %}" class="btn btn-secondary btn-lg">
-                                <i class="bi bi-x-circle"></i> Hủy
-                            </a>
-                        </div>
-                    </form>
-                </div>
+                    <div class="d-flex gap-3 mt-4">
+                        <button type="submit" class="btn text-white btn-lg flex-grow-1 fw-bold rounded-pill shadow-sm" style="background: var(--fluesy-grad); border: none;">
+                            <i class="bi bi-upload me-2"></i> Upload và Xử Lý
+                        </button>
+                        <a href="{% url 'core:dashboard' %}" class="btn btn-light btn-lg rounded-pill fw-bold text-muted px-4 shadow-sm">Hủy</a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
