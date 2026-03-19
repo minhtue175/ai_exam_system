@@ -17,7 +17,7 @@
                     <a href="{% url 'core:dashboard' %}" class="btn text-danger px-2"><i class="bi bi-x-circle-fill"></i></a>
                 {% endif %}
                 
-                <button type="submit" class="btn btn-primary rounded-pill px-4 ms-2" style="background: var(--primary-color);">Tìm</button>
+                <button type="submit" class="btn text-white rounded-pill px-4 ms-2 fw-bold" style="background: var(--fluesy-grad); border: none;">Tìm</button>
             </div>
         </form>
     </div>
@@ -50,26 +50,26 @@
             </thead>
             <tbody>
                 {% for attempt in recent_attempts %}
-                <tr>
+                <tr class="transition-all hover-shadow-sm">
                     <td class="fw-bold text-dark">
-                        <i class="bi bi-play-btn-fill text-primary me-2 fs-5"></i> {{ attempt.quiz.title }}
+                        <i class="bi bi-play-btn-fill text-primary me-2 fs-5"></i> <span class="text-truncate d-inline-block" style="max-width: 250px; vertical-align: bottom;">{{ attempt.quiz.title }}</span>
                     </td>
                     <td>
-                        <span class="badge rounded-pill px-3 py-2 
-                            {% if attempt.score >= 8 %}bg-success
-                            {% elif attempt.score >= 5 %}bg-warning text-dark
-                            {% else %}bg-danger{% endif %}">
+                        <span class="badge rounded-pill px-3 py-2 fw-bold
+                            {% if attempt.score >= 8 %}bg-success-subtle text-success
+                            {% elif attempt.score >= 5 %}bg-warning-subtle text-warning
+                            {% else %}bg-danger-subtle text-danger{% endif %}">
                             {{ attempt.score }} / 10
                         </span>
                     </td>
-                    <td class="text-muted">{{ attempt.correct_answers }}/{{ attempt.total_questions }} đúng</td>
-                    <td class="text-muted">{{ attempt.completed_at|date:"d/m/Y" }}</td>
+                    <td class="text-muted"><i class="bi bi-check-circle text-success"></i> {{ attempt.correct_answers }}/{{ attempt.total_questions }} đúng</td>
+                    <td class="text-muted"><i class="bi bi-clock"></i> {{ attempt.completed_at|date:"d/m/Y" }}</td>
                     <td class="text-end">
-                        <a href="{% url 'quizzes:result' attempt.id %}" class="btn btn-sm btn-light rounded-pill px-3 text-primary fw-bold">See All</a>
+                        <a href="{% url 'quizzes:result' attempt.id %}" class="btn btn-sm btn-light rounded-pill px-3 text-primary fw-bold shadow-sm">Xem chi tiết</a>
                     </td>
                 </tr>
                 {% empty %}
-                <tr><td colspan="5" class="text-center text-muted py-4">Chưa có bài thi nào gần đây.</td></tr>
+                <tr><td colspan="5" class="text-center text-muted py-4"><i class="bi bi-inbox fs-3 d-block mb-2 opacity-50"></i>Chưa có bài thi nào gần đây.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -90,25 +90,26 @@
             </thead>
             <tbody>
                 {% for doc in documents %}
-                <tr>
+                <tr class="transition-all hover-shadow-sm">
                     <td class="fw-bold">
                         {% if 'pdf' in doc.file_type %}
                             <i class="bi bi-file-earmark-pdf-fill text-danger me-2 fs-5"></i>
                         {% else %}
                             <i class="bi bi-file-earmark-word-fill text-primary me-2 fs-5"></i>
                         {% endif %}
-                        {{ doc.filename }}
+                        <span class="text-truncate d-inline-block" style="max-width: 250px; vertical-align: bottom;">{{ doc.filename }}</span>
                     </td>
-                    <td><span class="badge bg-light text-dark px-3 py-2 rounded-pill">{{ doc.file_type|upper }}</span></td>
+                    <td><span class="badge bg-light text-dark px-3 py-2 rounded-pill border">{{ doc.file_type|upper }}</span></td>
                     <td>
                         <span class="badge px-3 py-2 rounded-pill 
                             {% if doc.status == 'completed' %}bg-success-subtle text-success
-                            {% else %}bg-warning-subtle text-warning{% endif %}">
+                            {% elif doc.status == 'processing' %}bg-warning-subtle text-warning
+                            {% else %}bg-danger-subtle text-danger{% endif %}">
                             {{ doc.status|title }}
                         </span>
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'documents:detail' doc.pk %}" class="text-decoration-none text-primary fw-bold fs-6">Show Details</a>
+                        <a href="{% url 'documents:detail' doc.pk %}" class="text-decoration-none text-primary fw-bold fs-6">Show Details <i class="bi bi-arrow-right-short"></i></a>
                     </td>
                 </tr>
                 {% empty %}
@@ -118,52 +119,139 @@
         </table>
     </div>
 </div>
+
+<style>
+    .hover-shadow-sm:hover { background-color: #fafafc; border-radius: 12px; }
+</style>
 {% endblock %}
 
 {% block right_sidebar %}
 <div class="right-sidebar">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h5 class="fw-bold mb-0">Your Profile</h5>
-        <i class="bi bi-three-dots-vertical text-muted cursor-pointer"></i>
+        <span class="badge rounded-pill fw-bold shadow-sm" style="background: var(--primary-light); color: var(--primary-color); font-size: 13px;">
+            <i class="bi bi-clock me-1"></i> <span id="realtime-clock">--:--</span>
+        </span>
     </div>
 
-    <div class="text-center mb-5"> <div class="position-relative d-inline-block p-1 rounded-circle" style="border: 3px solid var(--primary-color); border-top-color: transparent; border-left-color: transparent; transform: rotate(45deg);">
+    <div class="text-center mb-5">
+        <div class="position-relative d-inline-block p-1 rounded-circle mb-3" style="border: 3px solid var(--primary-color); border-top-color: transparent; border-left-color: transparent; transform: rotate(45deg);">
             <img src="https://ui-avatars.com/api/?name={{ request.user.username }}&background=f0ebff&color=6a35ff&size=100" 
-                 class="rounded-circle" style="transform: rotate(-45deg); width: 100px; height: 100px; object-fit: cover;">
+                 class="rounded-circle" style="transform: rotate(-45deg); width: 90px; height: 90px; object-fit: cover;">
         </div>
-        <h4 class="fw-bold mt-3 mb-1">Chào mừng bạn trở lại!</h4>
-        <p class="text-muted fs-6 mb-0">Tiếp tục học tập và đạt mục tiêu nhé!</p>
+        <h4 class="fw-bold mb-1" id="dynamic-greeting">Chào bạn,</h4>
+        <h5 class="text-primary fw-bold">{{ request.user.username|title }}</h5>
+        <p class="text-muted fs-6 mb-0 mt-2">Tiếp tục học tập và đạt mục tiêu nhé!</p>
     </div>
 
     <div class="mb-5">
-        <h6 class="fw-bold mb-3">Thống kê điểm số</h6>
-        <div class="d-flex align-items-end justify-content-between" style="height: 120px;">
-            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 40%; position: relative;">
-                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 50%;"></div>
-            </div>
-            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 60%; position: relative;">
-                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 70%;"></div>
-            </div>
-            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 100%; position: relative;">
-                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 80%;"></div>
-            </div>
-            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 70%; position: relative;">
-                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 60%;"></div>
-            </div>
-            <div class="w-100 mx-1 rounded-top" style="background: var(--primary-light); height: 50%; position: relative;">
-                <div class="position-absolute bottom-0 w-100 rounded-top" style="background: var(--primary-color); height: 40%;"></div>
-            </div>
+        <div class="d-flex justify-content-between align-items-end mb-3">
+            <h6 class="fw-bold mb-0">Tiến độ điểm số</h6>
+            <small class="text-muted">Gần đây</small>
+        </div>
+        
+        <div class="card-custom p-3 bg-light border-0" style="border-radius: 16px;">
+            {% if recent_attempts %}
+                <canvas id="scoreChart" height="150"></canvas>
+            {% else %}
+                <div class="text-center text-muted py-4">
+                    <i class="bi bi-bar-chart text-secondary opacity-25 display-4 d-block mb-2"></i>
+                    <small>Làm bài thi để xem biểu đồ</small>
+                </div>
+            {% endif %}
         </div>
     </div>
 
     <h6 class="fw-bold mb-3 d-flex justify-content-between">
-        My Achievements <i class="bi bi-plus-circle text-muted"></i>
+        My Achievements <i class="bi bi-award text-warning"></i>
     </h6>
-    <div class="d-flex align-items-center mb-3">
-        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3"><i class="bi bi-award-fill fs-5"></i></div>
+    <div class="d-flex align-items-center mb-3 card-custom p-3 border-0 transition-all" style="background: #f8f9fa;">
+        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3 shadow-sm">
+            <i class="bi bi-trophy-fill fs-5"></i>
+        </div>
         <div>
-            <small class="text-muted">Học viên tích cực</small>
+            <h6 class="fw-bold mb-1">Chiến binh chăm chỉ</h6>
+            <small class="text-muted">Đã nộp {{ recent_attempts|length }} bài Quiz</small>
         </div>
-        </div>
+    </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 1. SCRIPT XỬ LÝ ĐỒNG HỒ & LỜI CHÀO
+    function updateClockAndGreeting() {
+        const now = new Date();
+        const hour = now.getHours();
+        const minutes = now.getMinutes().toString().padStart(2, '0');
+        
+        // Cập nhật đồng hồ
+        document.getElementById('realtime-clock').innerText = `${hour}:${minutes}`;
+        
+        // Logic lời chào (Dựa theo giờ Việt Nam hiện tại là buổi tối)
+        let greeting = "Chào buổi sáng";
+        if (hour >= 12 && hour < 18) {
+            greeting = "Chào buổi chiều";
+        } else if (hour >= 18 || hour < 5) {
+            greeting = "Chào buổi tối";
+        }
+        document.getElementById('dynamic-greeting').innerText = greeting + ",";
+    }
+    
+    // Chạy ngay lần đầu và update mỗi giây
+    updateClockAndGreeting();
+    setInterval(updateClockAndGreeting, 1000);
+
+    // 2. SCRIPT VẼ BIỂU ĐỒ CHART.JS
+    {% if recent_attempts %}
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        
+        // Lấy điểm từ Django truyền vào JS (Đảo ngược mảng để vẽ từ cũ -> mới)
+        const scores = [{% for attempt in recent_attempts %}{{ attempt.score|stringformat:"f" }},{% endfor %}].reverse();
+        
+        // Tạo nhãn (Label) cho trục X
+        const labels = [{% for attempt in recent_attempts %}'Q{{ forloop.revcounter }}',{% endfor %}];
+
+        // Tạo gradient màu tím mờ ở dưới đường vẽ
+        let gradient = ctx.createLinearGradient(0, 0, 0, 150);
+        gradient.addColorStop(0, 'rgba(106, 53, 255, 0.4)'); 
+        gradient.addColorStop(1, 'rgba(106, 53, 255, 0.0)');
+
+        new Chart(ctx, {
+            type: 'line', 
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Điểm số',
+                    data: scores,
+                    borderColor: '#6a35ff',
+                    backgroundColor: gradient,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: '#6a35ff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.4 // Làm cong đường vẽ
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }, // Giấu chú thích
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        max: 10, // Điểm tối đa hệ 10
+                        grid: { borderDash: [5, 5], color: '#e9ecef' },
+                        ticks: { stepSize: 2 }
+                    },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    });
+    {% endif %}
+</script>
 {% endblock %}

@@ -2,7 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required # Quan trọng nhất để bảo mật
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
 from django.http import HttpResponse
@@ -10,14 +10,12 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 import weasyprint
 
-# Import models
+
 from .models import Quiz, UserQuizAttempt
 from apps.documents.models import Document
 from .services.quiz_service import QuizService 
 
-# ==========================================
-# PHASE 4: QUIZ GENERATION & MANAGEMENT
-# ==========================================
+
 
 @login_required
 def quiz_list_view(request):

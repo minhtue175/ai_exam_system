@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 
-# Import các Model từ các app khác nhau
+
 from apps.documents.models import Document
 from apps.quizzes.models import UserQuizAttempt, Quiz
 
@@ -15,15 +15,13 @@ def home_view(request):
 @login_required
 def dashboard_view(request):
     """Dashboard trung tâm: Tìm kiếm và hiển thị Documents + Quiz Attempts"""
-    
-    # 1. Lấy từ khóa từ thanh Search (xử lý khoảng trắng thừa)
-    search_query = request.GET.get('search', '').strip()
-    
-    # 2. Khởi tạo QuerySet cơ bản cho User hiện tại
+ 
+    search_query = request.GET.get('search', '').strip() 
+
     documents = Document.objects.filter(user=request.user)
     recent_attempts = UserQuizAttempt.objects.filter(user=request.user).select_related('quiz')
     
-    # 3. LOGIC TÌM KIẾM SONG SONG
+
     if search_query:
         # Tìm trong tài liệu: Tên file hoặc nội dung bên trong file
         documents = documents.filter(
