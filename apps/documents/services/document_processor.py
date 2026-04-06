@@ -15,7 +15,7 @@ class DocumentProcessor:
         'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
     ]
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+    MAX_FILE_SIZE = 20 * 1024 * 1024 
     
     @classmethod
     def validate_file(cls, file: UploadedFile) -> None:

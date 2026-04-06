@@ -1,23 +1,18 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv  # ← Thêm dòng này
+from dotenv import load_dotenv 
 
-# ===============================
-# LOAD ENVIRONMENT VARIABLES
-# ===============================
-# Load file .env từ thư mục gốc project
-load_dotenv()  # ← Thêm dòng này
 
-# ===============================
-# CORE PATH CONFIG
-# ===============================
+
+
+
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 
-# ===============================
-# SECURITY
-# ===============================
+
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 
@@ -26,9 +21,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 
-# ===============================
-# APPLICATION DEFINITION
-# ===============================
+
 
 DJANGO_APPS = [
     'django.contrib.admin',
@@ -48,15 +41,13 @@ LOCAL_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    # 'rest_framework',
+    
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 
-# ===============================
-# MIDDLEWARE
-# ===============================
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -69,17 +60,13 @@ MIDDLEWARE = [
 ]
 
 
-# ===============================
-# URL & WSGI
-# ===============================
+
 
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
 
 
-# ===============================
-# TEMPLATES
-# ===============================
+
 
 TEMPLATES = [
     {
@@ -98,22 +85,7 @@ TEMPLATES = [
 ]
 
 
-# ===============================
-# DATABASE - XÓA PHẦN NÀY
-# Mỗi environment sẽ định nghĩa database riêng
-# ===============================
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
-
-# ===============================
-# PASSWORD VALIDATION
-# ===============================
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -123,9 +95,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# ===============================
-# INTERNATIONALIZATION
-# ===============================
+
 
 LANGUAGE_CODE = 'vi'
 
@@ -135,42 +105,32 @@ USE_I18N = True
 USE_TZ = True
 
 
-# ===============================
-# STATIC FILES
-# ===============================
+
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
 
-# ===============================
-# MEDIA FILES
-# ===============================
+
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-# ===============================
-# CUSTOM USER MODEL
-# ===============================
+
 
 AUTH_USER_MODEL = 'users.User'
 
 
-# ===============================
-# AUTHENTICATION URLS
-# ===============================
+
 
 LOGIN_URL = 'users:login'
 LOGIN_REDIRECT_URL = 'core:dashboard'
 LOGOUT_REDIRECT_URL = 'users:login'
 
 
-# ===============================
-# DEFAULT AUTO FIELD
-# ===============================
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

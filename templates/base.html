@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     
     <style>
-        
         :root {
             --primary-color: #6a35ff;
             --primary-light: #f0ebff;
@@ -80,12 +79,10 @@
             background-color: #f8f9fa;
         }
 
-
         .nav-item-custom.active {
             background-color: var(--primary-light);
             color: var(--primary-color);
         }
-
 
         .logout-btn {
             position: absolute;
@@ -101,7 +98,6 @@
 
         /* --- MAIN CONTENT --- */
         .main-wrapper {
-
             padding: 30px 40px;
             min-height: 100vh;
             transition: all 0.3s ease;
@@ -131,7 +127,6 @@
             z-index: 1000;
         }
 
-        
         .card-custom {
             background: var(--bg-card);
             border-radius: 16px;
@@ -187,6 +182,18 @@
     </div>
     {% endif %}
 
+    {% if messages %}
+    <div class="position-fixed top-0 end-0 p-4" style="z-index: 1050; margin-top: 20px;">
+        {% for message in messages %}
+            <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'warning' %}alert-warning{% else %}alert-success{% endif %} alert-dismissible fade show shadow-lg" role="alert" style="min-width: 320px; border-radius: 12px; border-left: 6px solid {% if message.tags == 'error' %}#dc3545{% elif message.tags == 'warning' %}#ffc107{% else %}#198754{% endif %};">
+                <i class="bi {% if message.tags == 'error' %}bi-exclamation-octagon-fill text-danger{% elif message.tags == 'warning' %}bi-exclamation-triangle-fill text-warning{% else %}bi-check-circle-fill text-success{% endif %} me-2 fs-5"></i>
+                <span class="fw-bold">{{ message }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="main-wrapper {% if user.is_authenticated %}is-logged-in {% block main_classes %}has-right-sidebar{% endblock %}{% endif %}">
         {% block content %}{% endblock %}
     </div>
@@ -196,5 +203,17 @@
     {% endif %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            setTimeout(function () {
+                let alerts = document.querySelectorAll('.alert');
+                alerts.forEach(function(alert) {
+                    let bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                });
+            }, 5000);
+        });
+    </script>
 </body>
 </html>
