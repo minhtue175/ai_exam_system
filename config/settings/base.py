@@ -143,3 +143,15 @@ if not GEMINI_API_KEY and DEBUG:
 # Cho phép upload tối đa 20MB 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20971520
+
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'fluesy_db',         # Tên Database bạn đã tạo trong pgAdmin 4
+        'USER': 'postgres',          # Tên tài khoản PostgreSQL (mặc định là postgres)
+        'PASSWORD': 'moimoi011235813', # Mật khẩu lúc bạn cài PostgreSQL
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
