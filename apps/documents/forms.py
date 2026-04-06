@@ -27,7 +27,7 @@ class DocumentUploadForm(forms.ModelForm):
                 raise forms.ValidationError('Chỉ chấp nhận file PDF hoặc Word!')
             
             # Kiểm tra kích thước (max 10MB)
-            if file.size > 10 * 1024 * 1024:
-                raise forms.ValidationError('File không được vượt quá 10MB!')
+            if file.size > 20 * 1024 * 1024:
+                raise forms.ValidationError('File không được vượt quá 20MB!')
         
         return file

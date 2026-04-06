@@ -23,7 +23,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['*']
 
 
 # ===============================
@@ -179,3 +179,7 @@ GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 if not GEMINI_API_KEY and DEBUG:
     import warnings
     warnings.warn("GEMINI_API_KEY chưa được cấu hình trong file .env!")
+
+# Cho phép upload tối đa 20MB 
+DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520
+FILE_UPLOAD_MAX_MEMORY_SIZE = 20971520
