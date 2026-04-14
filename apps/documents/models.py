@@ -16,7 +16,7 @@ class Document(TimeStampedModel):
     filename = models.CharField(max_length=255)
     file_path = models.FileField(upload_to='documents/raw/')
     file_size = models.BigIntegerField()
-    file_type = models.CharField(max_length=50)
+    file_type = models.CharField(max_length=255)
     extracted_text = models.TextField(blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='uploaded')
     

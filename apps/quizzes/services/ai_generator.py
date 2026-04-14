@@ -5,6 +5,7 @@ from google import genai
 from django.conf import settings
 import json
 import re
+import time
 from typing import List, Dict
 import logging
 
@@ -92,12 +93,39 @@ Trả về ĐÚNG định dạng JSON, KHÔNG thêm markdown hay text khác.
             logger.info(f"Generating {num_questions} questions (difficulty: {difficulty})")
             
            # Call Gemini API
-            response = self.client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt
-            )
+            logger.info(f"Generating {num_questions} questions (difficulty: {difficulty})")
             
-            response_text = response.text.strip()
+            # === BẮT ĐẦU ĐOẠN CODE "MẶT DÀY" CHỐNG LỖI 503 ===
+            max_retries = 3
+            response_text = ""
+            
+            for attempt in range(max_retries):
+                try:
+                    # Gọi cửa Google Gemini
+                    response = self.client.models.generate_content(
+                        model='gemini-2.5-flash',
+                        contents=prompt
+                    )
+                    response_text = response.text.strip()
+                    break  # Nếu gọi thành công, lập tức thoát khỏi vòng lặp
+                    
+                except Exception as api_err:
+                    err_msg = str(api_err).lower()
+                    # Nếu Google báo bận (503 hoặc high demand)
+                    if '503' in err_msg or 'unavailable' in err_msg or 'high demand' in err_msg:
+                        if attempt < max_retries - 1:
+                            logger.warning(f"Google AI đang kẹt xe. Đợi 5s rồi thử lại lần {attempt + 2}...")
+                            time.sleep(5)  # Đứng chơi 5 giây rồi quay lại vòng lặp
+                        else:
+                            # Đợi 3 lần mà vẫn không được thì mới báo lỗi ra ngoài
+                            raise Exception("Hệ thống AI của Google đang bị quá tải cục bộ, vui lòng thử lại sau ít phút!")
+                    else:
+                        # Nếu là lỗi khác (như API Key hết tiền) thì văng lỗi luôn không cần đợi
+                        raise api_err
+            # === KẾT THÚC ĐOẠN CODE CHỐNG 503 ===
+
+            # Parse JSON
+            questions = self._parse_response(response_text)
             
             # Parse JSON
             questions = self._parse_response(response_text)
