@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Đề thi: {{ title }}</title>
+    <style>
+        /* Cấu hình trang giấy A4, lề chuẩn */
+        @page {
+            size: A4;
+            margin: 2cm 2cm 2cm 2.5cm; /* Lề trái 2.5cm để bấm lỗ/ghim */
+        }
+        body {
+            font-family: "Times New Roman", Times, serif;
+            font-size: 14pt;
+            line-height: 1.5;
+            color: #000;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 18pt;
+            text-transform: uppercase;
+            margin: 0 0 10px 0;
+        }
+        .subtitle {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .question-block {
+            margin-bottom: 20px;
+            page-break-inside: avoid; /* Chống cắt đôi câu hỏi giữa 2 trang giấy */
+        }
+        .question-text {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .options-list {
+            margin: 0;
+            padding-left: 30px;
+        }
+        .options-list li {
+            margin-bottom: 5px;
+        }
+        .correct-answer {
+            font-weight: bold;
+            color: #dc3545;
+        }
+        .explanation {
+            font-style: italic;
+            color: #555;
+            margin-top: 5px;
+            padding-left: 30px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>ĐỀ THI: {{ title }}</h1>
+        {% if mode == 'teacher' %}
+            <div class="subtitle">BẢN DÀNH CHO GIÁO VIÊN (CÓ ĐÁP ÁN CHI TIẾT)</div>
+        {% endif %}
+    </div>
+
+    <div class="content">
+        {% for q in questions %}
+            <div class="question-block">
+                <div class="question-text">Câu {{ forloop.counter }}: {{ q.question_text }}</div>
+                
+                <ol type="A" class="options-list">
+                    {% for opt in q.options %}
+                        <li class="{% if mode == 'teacher' and forloop.counter0 == q.correct_index %}correct-answer{% endif %}">
+                            {{ opt }}
+                        </li>
+                    {% endfor %}
+                </ol>
+                
+                {% if mode == 'teacher' and q.explanation %}
+                    <div class="explanation">Giải thích: {{ q.explanation }}</div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="footer">
+        --- HẾT ---
+    </div>
+</body>
+</html>

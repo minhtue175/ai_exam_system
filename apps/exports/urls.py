@@ -4,5 +4,6 @@ from . import views
 app_name = 'exports'
 
 urlpatterns = [
-    # Sẽ thêm sau
+    path('word/<int:quiz_id>/', views.export_word_view, name='export_word'),
+    path('pdf/<int:quiz_id>/', views.export_pdf_view, name='export_pdf'),
 ]

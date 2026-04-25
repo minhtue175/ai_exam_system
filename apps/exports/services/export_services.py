@@ -3,6 +3,8 @@ import copy
 import io
 from docx import Document
 from docx.shared import Pt, RGBColor
+from django.template.loader import render_to_string
+from weasyprint import HTML
 
 def prepare_quiz_data(quiz, should_shuffle=False):
     """
@@ -24,7 +26,7 @@ def prepare_quiz_data(quiz, should_shuffle=False):
         # Lấy dữ liệu của 1 câu hỏi
         q_data = {
             'id': q.id,
-            'question_text': q.question,
+            'question_text': q.question_text,
             'options': list(q.options), # Ví dụ: ['Hà Nội', 'Đà Nẵng', 'Huế', 'Sài Gòn']
             'correct_index': q.correct_answer, # Ví dụ: 0 (Hà Nội)
             'explanation': getattr(q, 'explanation', 'Không có giải thích')
@@ -96,6 +98,27 @@ def generate_word_document(quiz_title, prepared_data, mode='student'):
     # 3. Kỹ thuật Pro: Lưu file vào bộ nhớ ảo (RAM) thay vì lưu rác ra ổ cứng
     buffer = io.BytesIO()
     doc.save(buffer)
+    buffer.seek(0)
+    
+    return buffer
+
+def generate_pdf_document(quiz_title, prepared_data, mode='student'):
+    """
+    Hàm tạo file PDF bằng cách render file HTML rồi convert sang PDF.
+    """
+    # 1. Gom dữ liệu để ném vào file HTML
+    context = {
+        'title': quiz_title,
+        'questions': prepared_data,
+        'mode': mode
+    }
+    
+    # 2. Dịch file HTML sang dạng text
+    html_string = render_to_string('quizzes/export_pdf_template.html', context)
+    
+    # 3. Dùng "Máy in ảo" WeasyPrint in ra file PDF lưu vào RAM
+    buffer = io.BytesIO()
+    HTML(string=html_string).write_pdf(buffer)
     buffer.seek(0)
     
     return buffer
