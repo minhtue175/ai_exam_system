@@ -1,4 +1,4 @@
-
+import random
 from django.shortcuts import render, redirect, get_object_or_404
 
 from django.contrib import messages
@@ -14,6 +14,8 @@ import weasyprint
 from .models import Quiz, UserQuizAttempt
 from apps.documents.models import Document
 from .services.quiz_service import QuizService 
+from .services.grading_service import GradingService
+from .services.shuffler import QuestionShuffler
 
 
 
@@ -83,83 +85,52 @@ def quiz_delete_view(request, pk):
 
 @login_required
 def quiz_take_view(request, pk):
-    """Giao diện làm bài thi và xử lý chấm điểm"""
+    """Giao diện làm bài thi và xử lý chấm điểm dùng Session Seed"""
     quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
-    
-    
-    
-    
+    session_key = f'quiz_seed_{quiz.id}'
     
     if request.method == 'POST':
-        correct_answers = 0
-        total_questions = quiz.num_questions
+        # Lấy lại seed từ session lúc user mở đề thi
+        seed = request.session.get(session_key)
+        if seed is None:
+            messages.error(request, "Phiên làm bài đã hết hạn hoặc không hợp lệ. Vui lòng thi lại.")
+            return redirect('quizzes:detail', pk=quiz.id)
+
+        # 1. Trộn lại đề Y HỆT như lúc hiển thị cho user (để index correct_answer khớp với UI)
+        questions_raw = list(quiz.questions.values('id', 'question_text', 'options', 'correct_answer', 'explanation'))
+        shuffled_questions = QuestionShuffler.shuffle_quiz(questions_raw, seed=seed)
+        
+        # 2. Thu thập đáp án user gửi lên
         user_answers = {}
-        
-        
-        
-        
-        
-        questions = quiz.questions.all()
-        for q in questions:
-            
-            selected_idx = request.POST.get(f'question_{q.id}')
-            
+        for q in shuffled_questions:
+            selected_idx = request.POST.get(f"question_{q['id']}")
             if selected_idx is not None:
-                selected_idx = int(selected_idx)
-                user_answers[str(q.id)] = selected_idx
+                user_answers[int(q['id'])] = int(selected_idx)
                 
-                
-                if selected_idx == q.correct_answer:
-                    correct_answers += 1
-               
-               
-        score = (correct_answers / total_questions) * 10 if total_questions > 0 else 0
+        # 3. Dùng GradingService để chấm điểm (Không tự code tay vòng lặp ở View nữa)
+        grading_result = GradingService.grade_shuffled_quiz(shuffled_questions, user_answers)
         
+        # 4. Lưu kết quả
+        attempt = GradingService.save_attempt(quiz, request.user, user_answers, grading_result)
         
-        
-        attempt = UserQuizAttempt.objects.create(
-            quiz=quiz,
-            user=request.user,
-            answers=user_answers,
-            total_questions=total_questions,
-            correct_answers=correct_answers,
-            score=score,
-            completed_at=timezone.now()
-        )
+        # 5. Xóa seed để user không thể f5 nộp lại bài cũ
+        request.session.pop(session_key, None)
         
         messages.success(request, "Đã nộp bài thành công!")
         return redirect('quizzes:result', attempt_id=attempt.id)
 
-    # Shuffle câu hỏi để chống gian lận
-    questions = quiz.questions.all().order_by('?')
+    # --- GET: XỬ LÝ HIỂN THỊ ĐỀ THI ---
+    # Tạo seed mới hoặc dùng lại seed nếu user lỡ F5 trang
+    seed = request.session.get(session_key) or random.randint(0, 2**32 - 1)
+    request.session[session_key] = seed
+
+    # Chuyển QuerySet thành list các dictionary để Shuffler xử lý được
+    questions_raw = list(quiz.questions.values('id', 'question_text', 'options', 'correct_answer'))
+    shuffled_questions = QuestionShuffler.shuffle_quiz(questions_raw, seed=seed)
     
     return render(request, 'quizzes/quiz_take.html', {
         'quiz': quiz,
-        'questions': questions
-    })
-
-@login_required
-def quiz_result_view(request, attempt_id):
-    """Hiển thị kết quả, chấm câu đúng/sai và hiện giải thích"""
-    
-    attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
-    
-    
-    questions = attempt.quiz.questions.all().order_by('order')
-    
-    
-    results_data = []
-    for q in questions:
-        user_choice = attempt.answers.get(str(q.id))
-        results_data.append({
-            'question': q,
-            'user_choice': user_choice,
-            'is_correct': user_choice == q.correct_answer
-        })
-        
-    return render(request, 'quizzes/quiz_result.html', {
-        'attempt': attempt,
-        'results_data': results_data
+        'questions': shuffled_questions  # Đẩy list đã xáo trộn xuống template
     })
 
 

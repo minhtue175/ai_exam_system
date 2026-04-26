@@ -17,7 +17,7 @@
             <form method="POST" action="{% url 'quizzes:take' quiz.id %}">
                 {% csrf_token %}
                 
-                {% for question in quiz.questions.all %}
+                {% for question in questions %}
                 <div class="card-custom p-4 mb-4" id="q-container-{{ question.id }}">
                     <h5 class="fw-bold mb-4 lh-base" style="color: var(--text-main);">
                         <span style="color: var(--primary-color);">Câu {{ forloop.counter }}:</span> {{ question.question_text }}
