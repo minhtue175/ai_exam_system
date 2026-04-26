@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load quiz_tags %}
 
 {% block title %}Kết quả: {{ attempt.quiz.title }}{% endblock %}
 
@@ -52,35 +53,41 @@
                             <span class="badge {% if item.is_correct %}bg-success{% else %}bg-danger{% endif %} fs-6 me-2 shadow-sm">
                                 {% if item.is_correct %}<i class="bi bi-check-lg"></i> Đúng{% else %}<i class="bi bi-x-lg"></i> Sai{% endif %}
                             </span>
-                            Câu {{ item.question.order }}: {{ item.question.question_text }}
+                            Câu {{ forloop.counter }}: {{ item.question_text }}
                         </h5>
 
                         <div class="ms-md-4">
-                            {% for option in item.question.options %}
-                                <div class="p-3 mb-2 rounded border fs-6
-                                    {% if forloop.counter0 == item.question.correct_answer %}
+                            {% for option in item.options %}
+                                <div class="p-3 mb-2 rounded border fs-6 d-flex align-items-start
+                                    {% if forloop.counter0 == item.correct_answer %}
                                         bg-success text-white border-success shadow-sm
-                                    {% elif forloop.counter0 == item.user_choice and not item.is_correct %}
+                                    {% elif forloop.counter0 == item.user_answer and not item.is_correct %}
                                         bg-danger text-white border-danger shadow-sm
                                     {% else %}
                                         bg-light text-muted
                                     {% endif %}
                                 ">
-                                    <strong>{{ forloop.counter }}.</strong> {{ option }}
+                                    <div class="me-2 flex-shrink-0">
+                                        <strong>{{ forloop.counter0|to_char }}.</strong>
+                                    </div>
                                     
-                                    {% if forloop.counter0 == item.question.correct_answer %}
-                                        <i class="bi bi-check-circle-fill float-end fs-5"></i>
-                                    {% elif forloop.counter0 == item.user_choice and not item.is_correct %}
-                                        <i class="bi bi-x-circle-fill float-end fs-5"></i>
+                                    <div class="flex-grow-1">
+                                        {{ option|clean_prefix }}
+                                    </div>
+                                    
+                                    {% if forloop.counter0 == item.correct_answer %}
+                                        <i class="bi bi-check-circle-fill ms-2 fs-5 flex-shrink-0"></i>
+                                    {% elif forloop.counter0 == item.user_answer and not item.is_correct %}
+                                        <i class="bi bi-x-circle-fill ms-2 fs-5 flex-shrink-0"></i>
                                     {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
 
-                        {% if item.question.explanation %}
+                        {% if item.explanation %}
                             <div class="mt-4 ms-md-4 p-3 bg-light text-dark rounded border-start border-warning border-4">
                                 <strong class="text-warning text-dark"><i class="bi bi-lightbulb-fill text-warning"></i> Giải thích đáp án:</strong> 
-                                <span class="ms-1">{{ item.question.explanation }}</span>
+                                <span class="ms-1">{{ item.explanation }}</span>
                             </div>
                         {% endif %}
                     </div>

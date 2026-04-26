@@ -30,13 +30,13 @@
     
     {% for item in results_data %}
         <div class="question-card">
-            <p><strong>Câu {{ item.question.order }}: {{ item.question.question_text }}</strong></p>
+            <p><strong>Câu {{ forloop.counter }}: {{ item.question_text }}</strong></p>
             
             <ul style="list-style-type: none; padding-left: 10px;">
-                {% for option in item.question.options %}
-                    {% if forloop.counter0 == item.question.correct_answer %}
+                {% for option in item.options %}
+                    {% if forloop.counter0 == item.correct_answer %}
                         <li class="correct">✔️ {{ option }} (Đáp án đúng)</li>
-                    {% elif forloop.counter0 == item.user_choice and not item.is_correct %}
+                    {% elif forloop.counter0 == item.user_answer and not item.is_correct %}
                         <li class="incorrect">❌ {{ option }} (Bạn chọn sai)</li>
                     {% else %}
                         <li>- {{ option }}</li>
@@ -44,9 +44,9 @@
                 {% endfor %}
             </ul>
 
-            {% if item.question.explanation %}
+            {% if item.explanation %}
                 <div class="explanation">
-                    <strong>Giải thích:</strong> {{ item.question.explanation }}
+                    <strong>Giải thích:</strong> {{ item.explanation }}
                 </div>
             {% endif %}
         </div>

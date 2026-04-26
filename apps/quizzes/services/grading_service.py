@@ -8,53 +8,43 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 class GradingService:
     """Grade quiz attempts and calculate scores"""
     
     @staticmethod
-    def grade_quiz(
-        quiz: Quiz,
+    def grade_shuffled_quiz(
+        shuffled_questions: List[Dict],
         user_answers: Dict[int, int]
     ) -> Dict:
         """
-        Grade user's quiz attempt
-        
-        Args:
-            quiz: Quiz instance
-            user_answers: {question_id: selected_option_index}
-            
-        Returns:
-            {
-                'total_questions': int,
-                'correct_answers': int,
-                'score': float,
-                'results': [...]
-            }
+        Grade user's quiz attempt based on SHUFFLED questions
         """
-        questions = quiz.questions.all()
-        total = len(questions)
+        total = len(shuffled_questions)
         correct = 0
         results = []
         
-        for question in questions:
-            user_answer = user_answers.get(question.id, -1)
-            is_correct = (user_answer == question.correct_answer)
+        for q in shuffled_questions:
+            q_id = q['id']
+            user_answer = user_answers.get(q_id, -1)
+            
+            # is_correct so sánh với correct_answer ĐÃ ĐƯỢC CẬP NHẬT INDEX BỞI SHUFFLER
+            is_correct = (user_answer == q['correct_answer'])
             
             if is_correct:
                 correct += 1
             
             results.append({
-                'question_id': question.id,
-                'question_text': question.question_text,
-                'options': question.options,
-                'correct_answer': question.correct_answer,
+                'question_id': q_id,
+                'question_text': q['question_text'],
+                'options': q['options'],
+                'correct_answer': q['correct_answer'],
                 'user_answer': user_answer,
                 'is_correct': is_correct,
-                'explanation': question.explanation
+                'explanation': q.get('explanation', '')
             })
         
-        score = (correct / total * 100) if total > 0 else 0
+        # ĐÃ SỬA THÀNH HỆ 10: Nhân 10 thay vì nhân 100
+        score = (correct / total * 10) if total > 0 else 0
         
         return {
             'total_questions': total,
@@ -70,27 +60,20 @@ class GradingService:
         user_answers: Dict[int, int],
         grading_result: Dict
     ) -> UserQuizAttempt:
-        """
-        Save quiz attempt to database
-        
-        Args:
-            quiz: Quiz instance
-            user: User instance
-            user_answers: User's answers
-            grading_result: Result from grade_quiz()
-            
-        Returns:
-            UserQuizAttempt instance
-        """
+        """Save quiz attempt to database"""
         attempt = UserQuizAttempt.objects.create(
             quiz=quiz,
             user=user,
             answers=user_answers,
+            # BỔ SUNG 3 DÒNG NÀY ĐỂ LƯU DATA VÀO DATABASE CHO ĐÚNG
+            total_questions=grading_result['total_questions'],
+            correct_answers=grading_result['correct_answers'],
+            details=grading_result['results'], # Đẩy cục JSON vào DB
             score=grading_result['score'],
             completed_at=timezone.now()
         )
         
-        logger.info(f"Quiz attempt saved: User={user.username}, Score={attempt.score}%")
+        logger.info(f"Quiz attempt saved: User={user.username}, Score={attempt.score}")
         
         return attempt
     

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load quiz_tags %}
 {% block title %}Đang thi: {{ quiz.title }} | Fluesy Exam{% endblock %}
 {% block main_classes %}{% endblock %}
 
@@ -25,13 +26,13 @@
                     
                     <div class="ps-md-2">
                         {% for option in question.options %}
-                        <div class="form-check custom-radio mb-3 p-3 rounded border transition-all" style="background-color: #fcfcfd;">
-                            <input class="form-check-input ms-1 me-3" type="radio" 
+                        <div class="form-check custom-radio mb-3 p-3 rounded border transition-all d-flex align-items-start" style="background-color: #fcfcfd;">
+                            <input class="form-check-input ms-1 me-3 mt-1" type="radio" 
                                    name="question_{{ question.id }}" 
                                    id="q{{ question.id }}_opt{{ forloop.counter0 }}" 
-                                   value="{{ forloop.counter0 }}" style="transform: scale(1.2); cursor: pointer;">
-                            <label class="form-check-label w-100 cursor-pointer text-dark" for="q{{ question.id }}_opt{{ forloop.counter0 }}" style="cursor: pointer;">
-                                {{ option }}
+                                   value="{{ forloop.counter0 }}" style="transform: scale(1.2); cursor: pointer; flex-shrink: 0;">
+                            <label class="form-check-label w-100 cursor-pointer text-dark lh-base" for="q{{ question.id }}_opt{{ forloop.counter0 }}" style="cursor: pointer;">
+                                <strong>{{ forloop.counter0|to_char }}.</strong> {{ option|clean_prefix }}
                             </label>
                         </div>
                         {% endfor %}

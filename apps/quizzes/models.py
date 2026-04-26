@@ -7,8 +7,8 @@ class Quiz(TimeStampedModel):
     
     # Đã thu gọn thành 2 mức theo yêu cầu của bạn
     DIFFICULTY_CHOICES = [
-        ('basic', 'Đánh giá mức độ hiểu'),
-        ('advanced', 'Đòi hỏi tư duy, phân tích'),
+        ('basic', 'Cơ Bản'),
+        ('advanced', 'Nâng Cao'),
     ]
     
     document = models.ForeignKey(
@@ -83,6 +83,9 @@ class UserQuizAttempt(TimeStampedModel):
     
     # Lưu dưới dạng dict: {"ID_câu_hỏi": Index_đáp_án_đã_chọn} -> Ví dụ: {"15": 2, "16": 0}
     answers = models.JSONField(default=dict, blank=True) 
+    
+    # MỚI THÊM: Lưu toàn bộ "snapshot" kết quả (bao gồm câu hỏi và đáp án đã xáo trộn)
+    details = models.JSONField(null=True, blank=True)
     
     # Các trường thống kê điểm số
     total_questions = models.IntegerField(default=0)

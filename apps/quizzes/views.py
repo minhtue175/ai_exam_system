@@ -22,7 +22,7 @@ from .services.shuffler import QuestionShuffler
 @login_required
 def quiz_list_view(request):
     """Hiển thị danh sách các bài Quiz đã tạo (Chỉ của user hiện tại)"""
-    # Chỉ lấy quiz của người đang đăng nhập
+    
     quizzes = Quiz.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'quizzes/list.html', {'quizzes': quizzes})
 
@@ -35,9 +35,10 @@ def quiz_create_view(request, document_id):
         num_questions = int(request.POST.get('num_questions', 5))
         difficulty = request.POST.get('difficulty', 'medium')
         
+        
         try:
             
-            quiz_service = QuizService()
+            quiz_service = QuizService()  
             quiz = quiz_service.create_quiz_from_document(
                 document=document,
                 user=request.user,
@@ -57,7 +58,7 @@ def quiz_create_view(request, document_id):
 @login_required
 def quiz_detail_view(request, pk):
     """Xem chi tiết bộ đề đã tạo (Preview)"""
-    # Bảo mật: Chỉ chủ sở hữu mới được xem chi tiết đề
+    
     quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
     questions = quiz.questions.all().order_by('order')
     
@@ -107,7 +108,7 @@ def quiz_take_view(request, pk):
             if selected_idx is not None:
                 user_answers[int(q['id'])] = int(selected_idx)
                 
-        # 3. Dùng GradingService để chấm điểm (Không tự code tay vòng lặp ở View nữa)
+        # 3. Dùng GradingService để chấm điểm
         grading_result = GradingService.grade_shuffled_quiz(shuffled_questions, user_answers)
         
         # 4. Lưu kết quả
@@ -133,6 +134,19 @@ def quiz_take_view(request, pk):
         'questions': shuffled_questions  # Đẩy list đã xáo trộn xuống template
     })
 
+@login_required
+def quiz_result_view(request, attempt_id):
+    """Hiển thị kết quả siêu tốc lấy từ JSON snapshot"""
+    attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
+    
+    # Lấy mảng results đã lưu thẳng từ JSON ra
+    results_data = attempt.details or []
+        
+    return render(request, 'quizzes/quiz_result.html', {
+        'attempt': attempt,
+        'results_data': results_data
+    })
+
 
 # ==========================================
 # PHASE 6: XUẤT PDF
@@ -140,20 +154,12 @@ def quiz_take_view(request, pk):
 
 @login_required
 def export_pdf_view(request, attempt_id):
-    """Xuất kết quả bài làm ra file PDF"""
+    """Xuất kết quả bài làm ra file PDF đảm bảo đúng dữ liệu lúc thi"""
     attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
-    questions = attempt.quiz.questions.all().order_by('order')
     
-    results_data = []
-    for q in questions:
-        user_choice = attempt.answers.get(str(q.id))
-        results_data.append({
-            'question': q,
-            'user_choice': user_choice,
-            'is_correct': user_choice == q.correct_answer
-        })
+    # Lấy mảng results đã lưu thẳng từ JSON ra
+    results_data = attempt.details or []
        
-        
     html_string = render_to_string('quizzes/pdf_template.html', {
         'attempt': attempt,
         'results_data': results_data,
