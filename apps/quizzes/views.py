@@ -16,6 +16,7 @@ from apps.documents.models import Document
 from .services.quiz_service import QuizService 
 from .services.grading_service import GradingService
 from .services.shuffler import QuestionShuffler
+from .tasks import generate_quiz_task
 
 
 
@@ -28,7 +29,7 @@ def quiz_list_view(request):
 
 @login_required
 def quiz_create_view(request, document_id):
-    """Xử lý form tạo Quiz mới từ Document bằng AI"""
+    """Xử lý form tạo Quiz mới từ Document bằng AI (CHẠY NGẦM)"""
     document = get_object_or_404(Document, id=document_id, user=request.user)
     
     if request.method == 'POST':
@@ -37,23 +38,24 @@ def quiz_create_view(request, document_id):
         
         
         try:
-            
-            quiz_service = QuizService()  
-            quiz = quiz_service.create_quiz_from_document(
-                document=document,
-                user=request.user,
+            # GỌI CELERY: Dùng hàm .delay() để ném việc vào Redis
+            generate_quiz_task.delay(
+                document_id=document.id,
+                user_id=request.user.id,
                 num_questions=num_questions,
                 difficulty=difficulty
             )
             
-            messages.success(request, f"Đã tạo thành công bộ câu hỏi '{quiz.title}'!")
+            # Trả về thông báo cho user TỨC THÌ, không cần chờ AI
+            messages.info(request, "Hệ thống đang phân tích. Vui lòng chờ trong dây lát!")
             return redirect('quizzes:list')
         
         except Exception as e:
-            messages.error(request, f"Có lỗi xảy ra: {str(e)}")
+            messages.error(request, f"Có lỗi xảy ra khi đưa vào hàng đợi: {str(e)}")
             return redirect('documents:detail', pk=document_id)
 
     return render(request, 'quizzes/create.html', {'document': document})
+
 
 @login_required
 def quiz_detail_view(request, pk):
