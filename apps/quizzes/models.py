@@ -5,7 +5,7 @@ from apps.core.models import TimeStampedModel
 class Quiz(TimeStampedModel):
     """Quiz generated from document"""
     
-    # Đã thu gọn thành 2 mức theo yêu cầu của bạn
+    
     DIFFICULTY_CHOICES = [
         ('basic', 'Cơ Bản'),
         ('advanced', 'Nâng Cao'),

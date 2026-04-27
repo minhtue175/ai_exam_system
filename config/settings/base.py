@@ -1,5 +1,8 @@
 from pathlib import Path
 import os
+
+
+
 from dotenv import load_dotenv 
 
 
@@ -24,6 +27,7 @@ ALLOWED_HOSTS = ['*']
 
 
 DJANGO_APPS = [
+    'daphne',  # <-- BẮT BUỘC PHẢI NẰM TRÊN CÙNG (Dành cho WebSockets)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -41,7 +45,7 @@ LOCAL_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    
+    'channels', # <-- Khai báo app Channels
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -64,9 +68,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
-
-
-
+# Bổ sung ASGI_APPLICATION ở dưới cùng file
 
 TEMPLATES = [
     {
@@ -145,6 +147,8 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20971520
 
 
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -156,6 +160,23 @@ DATABASES = {
     }
 }
 
+# ===============================
+# CẤU HÌNH CELERY & REDIS
+# ===============================
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+
+# ===============================
+# CẤU HÌNH WEBSOCKETS (CHANNELS)
+# ===============================
+ASGI_APPLICATION = 'config.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('127.0.0.1', 6379)], # Dùng chung cái Rổ Redis với Celery
+        },
+    },
+}
