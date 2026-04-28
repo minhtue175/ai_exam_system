@@ -81,10 +81,10 @@ class UserQuizAttempt(TimeStampedModel):
         related_name='quiz_attempts'
     )
     
-    # Lưu dưới dạng dict: {"ID_câu_hỏi": Index_đáp_án_đã_chọn} -> Ví dụ: {"15": 2, "16": 0}
+    
     answers = models.JSONField(default=dict, blank=True) 
     
-    # MỚI THÊM: Lưu toàn bộ "snapshot" kết quả (bao gồm câu hỏi và đáp án đã xáo trộn)
+    #Lưu toàn bộ "snapshot" kết quả (bao gồm câu hỏi và đáp án đã xáo trộn)
     details = models.JSONField(null=True, blank=True)
     
     # Các trường thống kê điểm số

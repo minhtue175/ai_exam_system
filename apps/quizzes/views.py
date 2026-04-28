@@ -82,9 +82,7 @@ def quiz_delete_view(request, pk):
     return redirect('quizzes:detail', pk=pk)
 
 
-# ==========================================
-# PHASE 5: EXAM & GRADING
-# ==========================================
+
 
 @login_required
 def quiz_take_view(request, pk):
@@ -122,18 +120,17 @@ def quiz_take_view(request, pk):
         messages.success(request, "Đã nộp bài thành công!")
         return redirect('quizzes:result', attempt_id=attempt.id)
 
-    # --- GET: XỬ LÝ HIỂN THỊ ĐỀ THI ---
-    # Tạo seed mới hoặc dùng lại seed nếu user lỡ F5 trang
+    
     seed = request.session.get(session_key) or random.randint(0, 2**32 - 1)
     request.session[session_key] = seed
 
-    # Chuyển QuerySet thành list các dictionary để Shuffler xử lý được
+
     questions_raw = list(quiz.questions.values('id', 'question_text', 'options', 'correct_answer'))
     shuffled_questions = QuestionShuffler.shuffle_quiz(questions_raw, seed=seed)
     
     return render(request, 'quizzes/quiz_take.html', {
         'quiz': quiz,
-        'questions': shuffled_questions  # Đẩy list đã xáo trộn xuống template
+        'questions': shuffled_questions  
     })
 
 @login_required
@@ -150,16 +147,14 @@ def quiz_result_view(request, attempt_id):
     })
 
 
-# ==========================================
-# PHASE 6: XUẤT PDF
-# ==========================================
+
 
 @login_required
 def export_pdf_view(request, attempt_id):
     """Xuất kết quả bài làm ra file PDF đảm bảo đúng dữ liệu lúc thi"""
     attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
     
-    # Lấy mảng results đã lưu thẳng từ JSON ra
+    
     results_data = attempt.details or []
        
     html_string = render_to_string('quizzes/pdf_template.html', {

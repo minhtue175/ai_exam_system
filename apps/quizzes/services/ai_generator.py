@@ -77,7 +77,7 @@ Trả về ĐÚNG định dạng JSON, KHÔNG thêm markdown hay text khác.
             if difficulty not in ['easy', 'medium', 'hard']:
                 difficulty = 'medium'
             
-            # Truncate if too long - TĂNG LÊN CHO 40 CÂU
+
             max_chars = 30000
             if len(text_content) > max_chars:
                 logger.warning(f"Text too long, truncating to {max_chars}")
@@ -95,34 +95,33 @@ Trả về ĐÚNG định dạng JSON, KHÔNG thêm markdown hay text khác.
            # Call Gemini API
             logger.info(f"Generating {num_questions} questions (difficulty: {difficulty})")
             
-            # === BẮT ĐẦU ĐOẠN CODE "MẶT DÀY" CHỐNG LỖI 503 ===
             max_retries = 3
             response_text = ""
             
             for attempt in range(max_retries):
                 try:
-                    # Gọi cửa Google Gemini
+                    
                     response = self.client.models.generate_content(
                         model='gemini-2.5-flash',
                         contents=prompt
                     )
                     response_text = response.text.strip()
-                    break  # Nếu gọi thành công, lập tức thoát khỏi vòng lặp
+                    break 
                     
                 except Exception as api_err:
                     err_msg = str(api_err).lower()
-                    # Nếu Google báo bận (503 hoặc high demand)
+                    
                     if '503' in err_msg or 'unavailable' in err_msg or 'high demand' in err_msg:
                         if attempt < max_retries - 1:
                             logger.warning(f"Google AI đang kẹt xe. Đợi 5s rồi thử lại lần {attempt + 2}...")
-                            time.sleep(5)  # Đứng chơi 5 giây rồi quay lại vòng lặp
+                            time.sleep(5)  
                         else:
-                            # Đợi 3 lần mà vẫn không được thì mới báo lỗi ra ngoài
+                            
                             raise Exception("Hệ thống AI của Google đang bị quá tải cục bộ, vui lòng thử lại sau ít phút!")
                     else:
-                        # Nếu là lỗi khác (như API Key hết tiền) thì văng lỗi luôn không cần đợi
+                        
                         raise api_err
-            # === KẾT THÚC ĐOẠN CODE CHỐNG 503 ===
+           
 
             # Parse JSON
             questions = self._parse_response(response_text)

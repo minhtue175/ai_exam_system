@@ -27,7 +27,7 @@ class GradingService:
             q_id = q['id']
             user_answer = user_answers.get(q_id, -1)
             
-            # is_correct so sánh với correct_answer ĐÃ ĐƯỢC CẬP NHẬT INDEX BỞI SHUFFLER
+           
             is_correct = (user_answer == q['correct_answer'])
             
             if is_correct:
@@ -43,7 +43,7 @@ class GradingService:
                 'explanation': q.get('explanation', '')
             })
         
-        # ĐÃ SỬA THÀNH HỆ 10: Nhân 10 thay vì nhân 100
+
         score = (correct / total * 10) if total > 0 else 0
         
         return {
@@ -65,7 +65,7 @@ class GradingService:
             quiz=quiz,
             user=user,
             answers=user_answers,
-            # BỔ SUNG 3 DÒNG NÀY ĐỂ LƯU DATA VÀO DATABASE CHO ĐÚNG
+            
             total_questions=grading_result['total_questions'],
             correct_answers=grading_result['correct_answers'],
             details=grading_result['results'], # Đẩy cục JSON vào DB

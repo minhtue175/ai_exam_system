@@ -45,7 +45,7 @@ class QuizService:
         logger.info(f"Creating quiz from document: {document.filename}")
         
         try:
-            # Generate questions using AI (Gọi AI ở ngoài transaction để tránh lock DB quá lâu)
+           
             questions_data = self.ai_generator.generate_questions(
                 text_content=document.extracted_text,
                 num_questions=num_questions,
@@ -63,7 +63,7 @@ class QuizService:
                     difficulty=difficulty
                 )
                 
-                # Chuẩn bị danh sách đối tượng Question để lưu hàng loạt
+            
                 questions_to_create = []
                 for idx, q_data in enumerate(questions_data):
                     questions_to_create.append(
@@ -77,7 +77,7 @@ class QuizService:
                         )
                     )
                 
-                # Lưu toàn bộ câu hỏi bằng 1 câu lệnh SQL duy nhất (Tối ưu hiệu năng)
+        
                 Question.objects.bulk_create(questions_to_create)
                 
             logger.info(f"Quiz created successfully: ID={quiz.id}, Questions={len(questions_data)}")

@@ -234,12 +234,12 @@
             text: data.message,
             icon: 'success',
             confirmButtonText: 'Xem đề ngay',
-            confirmButtonColor: '#6a35ff', // Trùng màu chủ đạo của bạn
-            allowOutsideClick: false, // Bắt buộc bấm nút mới tắt
+            confirmButtonColor: '#6a35ff',
+            allowOutsideClick: false, 
             backdrop: `rgba(0,0,123,0.4)` // Hiệu ứng tối nền
         }).then((result) => {
             if (result.isConfirmed) {
-                window.location.reload(); // Bấm nút xong mới F5 trang
+                window.location.reload();
             }
         });
     };
