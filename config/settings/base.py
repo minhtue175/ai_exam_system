@@ -27,7 +27,7 @@ ALLOWED_HOSTS = ['*']
 
 
 DJANGO_APPS = [
-    'daphne',  # <-- BẮT BUỘC PHẢI NẰM TRÊN CÙNG (Dành cho WebSockets)
+    'daphne', 
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,7 +45,7 @@ LOCAL_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    'channels', # <-- Khai báo app Channels
+    'channels', 
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -68,7 +68,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
-# Bổ sung ASGI_APPLICATION ở dưới cùng file
+
 
 TEMPLATES = [
     {
@@ -142,7 +142,7 @@ if not GEMINI_API_KEY and DEBUG:
     import warnings
     warnings.warn("GEMINI_API_KEY chưa được cấu hình trong file .env!")
 
-# Cho phép upload tối đa 20MB 
+
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520
 FILE_UPLOAD_MAX_MEMORY_SIZE = 20971520
 

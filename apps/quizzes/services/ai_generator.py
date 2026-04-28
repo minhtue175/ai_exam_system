@@ -16,28 +16,29 @@ class GeminiQuizGenerator:
     """Generate quiz questions using Google Gemini AI"""
     
     QUIZ_PROMPT_TEMPLATE = """
-Bạn là một giáo viên chuyên nghiệp tạo đề thi trắc nghiệm.
+    
+Bạn là một giảng viên đại học kỳ cựu đang biên soạn đề thi trắc nghiệm. 
+Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm. Tuyệt đối KHÔNG sử dụng các cụm từ sáo rỗng, khuôn mẫu mang "mùi AI".
 
 **NHIỆM VỤ:**
-Dựa trên văn bản dưới đây, hãy tạo {num_questions} câu hỏi trắc nghiệm chất lượng cao.
+Đọc kỹ văn bản dưới đây và tạo ra {num_questions} câu hỏi trắc nghiệm. Độ khó yêu cầu: {difficulty}.
 
-**YÊU CẦU BẮT BUỘC:**
-1. Câu hỏi phải DỰA HOÀN TOÀN vào nội dung văn bản được cung cấp
-2. KHÔNG tạo câu hỏi về thông tin KHÔNG có trong văn bản
-3. Câu hỏi phải rõ ràng, dễ hiểu, ngắn gọn
-4. Mỗi câu hỏi có ĐÚNG 4 đáp án
-5. Chỉ có DUY NHẤT 1 đáp án đúng
-6. Các đáp án sai phải hợp lý, liên quan đến chủ đề
-7. Độ khó: {difficulty}
+**KỸ THUẬT RA ĐỀ (BẮT BUỘC TUÂN THỦ):**
+1. Nội dung trọng tâm: Hỏi vào các khái niệm cốt lõi, cơ chế hoạt động hoặc ứng dụng thực tế có trong văn bản, KHÔNG hỏi lắt nhắt vào các tiểu tiết vô nghĩa (như ngày tháng năm không quan trọng).
+2. Nghệ thuật "Gài bẫy" (Distractors):
+   - 3 đáp án sai phải cực kỳ hợp lý, được xây dựng dựa trên những nhầm lẫn phổ biến của sinh viên.
+   - Các đáp án phải có độ dài tương đương nhau. Tránh tình trạng đáp án đúng luôn là câu dài nhất.
+3. Giải thích sắc bén:
+   - Phần "explanation" phải ngắn gọn (1-2 câu). Giải thích trực diện TẠI SAO đáp án đó đúng dựa trên văn bản, KHÔNG lặp lại câu hỏi.
 
-**ĐỊNH DẠNG OUTPUT (CHỈ TRẢ VỀ JSON):**
+**ĐỊNH DẠNG OUTPUT (CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH GÌ THÊM):**
 {{
   "questions": [
     {{
-      "question": "Câu hỏi ở đây?",
-      "options": ["Đáp án A", "Đáp án B", "Đáp án C", "Đáp án D"],
-      "correct_answer": 0,
-      "explanation": "Giải thích ngắn gọn"
+      "question": "Nội dung câu hỏi mang tính suy luận...",
+      "options": ["Đáp án nhiễu 1", "Đáp án đúng", "Đáp án nhiễu 2", "Đáp án nhiễu 3"],
+      "correct_answer": 1,
+      "explanation": "Vì theo tài liệu..."
     }}
   ]
 }}
@@ -45,7 +46,7 @@ Dựa trên văn bản dưới đây, hãy tạo {num_questions} câu hỏi tr�
 **VĂN BẢN:**
 {text_content}
 
-Trả về ĐÚNG định dạng JSON, KHÔNG thêm markdown hay text khác.
+
 """
     
     def __init__(self):

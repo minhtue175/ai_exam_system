@@ -1,17 +1,13 @@
 from .base import *
 
-# ===============================
-# PRODUCTION SETTINGS
-# ===============================
+
 
 DEBUG = False
 
 ALLOWED_HOSTS = ['yourdomain.com', 'www.yourdomain.com']
 
 
-# ===============================
-# DATABASE FOR PRODUCTION
-# ===============================
+
 
 DATABASES = {
     'default': {
