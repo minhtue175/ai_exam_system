@@ -5,7 +5,6 @@ from apps.core.models import TimeStampedModel
 class Quiz(TimeStampedModel):
     """Quiz generated from document"""
     
-    
     DIFFICULTY_CHOICES = [
         ('basic', 'Cơ Bản'),
         ('advanced', 'Nâng Cao'),
@@ -13,7 +12,9 @@ class Quiz(TimeStampedModel):
     
     document = models.ForeignKey(
         'documents.Document',
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL, 
+        null=True,                 
+        blank=True,                
         related_name='quizzes'
     )
     user = models.ForeignKey(
@@ -33,6 +34,10 @@ class Quiz(TimeStampedModel):
         db_table = 'quizzes'
         ordering = ['-created_at']
         verbose_name_plural = 'Quizzes'
+        # THÊM INDEX TẠI ĐÂY
+        indexes = [
+            models.Index(fields=['user', '-created_at'], name='idx_quiz_user_created'),
+        ]
     
     def __str__(self):
         return f"{self.title} ({self.num_questions} câu)"
@@ -55,6 +60,10 @@ class Question(models.Model):
     class Meta:
         db_table = 'questions'
         ordering = ['order', 'id']
+        # THÊM INDEX TẠI ĐÂY
+        indexes = [
+            models.Index(fields=['quiz', 'order'], name='idx_question_quiz_order'),
+        ]
     
     def __str__(self):
         return f"Q{self.order}: {self.question_text[:50]}..."
@@ -84,20 +93,24 @@ class UserQuizAttempt(TimeStampedModel):
     
     answers = models.JSONField(default=dict, blank=True) 
     
-    #Lưu toàn bộ "snapshot" kết quả (bao gồm câu hỏi và đáp án đã xáo trộn)
+    
     details = models.JSONField(null=True, blank=True)
     
-    # Các trường thống kê điểm số
+  
     total_questions = models.IntegerField(default=0)
     correct_answers = models.IntegerField(default=0)
     score = models.DecimalField(max_digits=5, decimal_places=2, default=0.00) # Điểm hệ 10 hoặc 100
     
-    # Trạng thái nộp bài
+  
     completed_at = models.DateTimeField(null=True, blank=True)
     
     class Meta:
         db_table = 'user_quiz_attempts'
         ordering = ['-created_at']
+    
+        indexes = [
+            models.Index(fields=['user', 'quiz', '-created_at'], name='idx_attempt_user_quiz'),
+        ]
     
     def __str__(self):
         return f"{self.user.username} - {self.quiz.title} - {self.score} điểm"

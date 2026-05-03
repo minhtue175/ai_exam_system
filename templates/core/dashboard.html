@@ -128,7 +128,7 @@
 {% block right_sidebar %}
 <div class="right-sidebar">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h5 class="fw-bold mb-0">Your Profile</h5>
+        <h5 class="fw-bold mb-0">Profile</h5>
         <span class="badge rounded-pill fw-bold shadow-sm" style="background: var(--primary-light); color: var(--primary-color); font-size: 13px;">
             <i class="bi bi-clock me-1"></i> <span id="realtime-clock">--:--</span>
         </span>
@@ -162,33 +162,49 @@
         </div>
     </div>
 
-    <h6 class="fw-bold mb-3 d-flex justify-content-between">
-        My Achievements <i class="bi bi-award text-warning"></i>
-    </h6>
-    <div class="d-flex align-items-center mb-3 card-custom p-3 border-0 transition-all" style="background: #f8f9fa;">
-        <div class="bg-primary-subtle text-primary rounded-circle p-2 me-3 shadow-sm">
-            <i class="bi bi-trophy-fill fs-5"></i>
+    
+    <!-- Thêm Khối Thống Kê Nhanh -->
+    <div class="mb-5">
+        <h6 class="fw-bold mb-3">Tổng quan học tập</h6>
+        <div class="d-flex gap-2">
+            <div class="flex-grow-1 card-custom p-3 text-center bg-light border-0" style="border-radius: 12px;">
+                <h3 class="fw-bold text-primary mb-0">{{ recent_attempts.count|default:0 }}</h3>
+                <small class="text-muted" style="font-size: 12px;">Quiz đã làm</small>
+            </div>
+            <div class="flex-grow-1 card-custom p-3 text-center bg-light border-0" style="border-radius: 12px;">
+                <h3 class="fw-bold text-success mb-0">{{ documents.count|default:0 }}</h3>
+                <small class="text-muted" style="font-size: 12px;">Tài liệu</small>
+            </div>
         </div>
-        <div>
-            <h6 class="fw-bold mb-1">Chiến binh chăm chỉ</h6>
-            <small class="text-muted">Đã nộp {{ recent_attempts|length }} bài Quiz</small>
-        </div>
+    </div>
+
+    <!-- Thêm Khối Call to Action -->
+    <div class="card-custom p-4 text-center text-white" style="background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); border-radius: 16px;">
+        <i class="bi bi-rocket-takeoff display-4 mb-2 opacity-75"></i>
+        <h6 class="fw-bold mb-2">Chinh phục đỉnh cao!</h6>
+        <p class="small mb-3 opacity-75">Tải tài liệu mới và để AI tạo đề thi cho bạn ngay hôm nay.</p>
+        <a href="{% url 'documents:upload' %}" class="btn btn-light rounded-pill btn-sm fw-bold px-4 text-danger w-100 shadow-sm">
+            <i class="bi bi-cloud-arrow-up me-1"></i> Tải lên ngay
+        </a>
+    </div>
+
+        
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-    // 1. SCRIPT XỬ LÝ ĐỒNG HỒ & LỜI CHÀO
+    
     function updateClockAndGreeting() {
         const now = new Date();
         const hour = now.getHours();
         const minutes = now.getMinutes().toString().padStart(2, '0');
         
-        // Cập nhật đồng hồ
+        
         document.getElementById('realtime-clock').innerText = `${hour}:${minutes}`;
         
-        // Logic lời chào (Dựa theo giờ Việt Nam hiện tại là buổi tối)
+        
         let greeting = "Chào buổi sáng";
         if (hour >= 12 && hour < 18) {
             greeting = "Chào buổi chiều";
@@ -198,22 +214,22 @@
         document.getElementById('dynamic-greeting').innerText = greeting + ",";
     }
     
-    // Chạy ngay lần đầu và update mỗi giây
+   
     updateClockAndGreeting();
     setInterval(updateClockAndGreeting, 1000);
 
-    // 2. SCRIPT VẼ BIỂU ĐỒ CHART.JS
+    
     {% if recent_attempts %}
     document.addEventListener("DOMContentLoaded", function() {
         const ctx = document.getElementById('scoreChart').getContext('2d');
         
-        // Lấy điểm từ Django truyền vào JS (Đảo ngược mảng để vẽ từ cũ -> mới)
+       
         const scores = [{% for attempt in recent_attempts %}{{ attempt.score|stringformat:"f" }},{% endfor %}].reverse();
         
-        // Tạo nhãn (Label) cho trục X
+        
         const labels = [{% for attempt in recent_attempts %}'Q{{ forloop.revcounter }}',{% endfor %}];
 
-        // Tạo gradient màu tím mờ ở dưới đường vẽ
+       
         let gradient = ctx.createLinearGradient(0, 0, 0, 150);
         gradient.addColorStop(0, 'rgba(106, 53, 255, 0.4)'); 
         gradient.addColorStop(1, 'rgba(106, 53, 255, 0.0)');
@@ -233,17 +249,17 @@
                     pointBorderWidth: 2,
                     pointRadius: 4,
                     fill: true,
-                    tension: 0.4 // Làm cong đường vẽ
+                    tension: 0.4 
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } }, // Giấu chú thích
+                plugins: { legend: { display: false } }, 
                 scales: {
                     y: { 
                         beginAtZero: true, 
-                        max: 10, // Điểm tối đa hệ 10
+                        max: 10, 
                         grid: { borderDash: [5, 5], color: '#e9ecef' },
                         ticks: { stepSize: 2 }
                     },

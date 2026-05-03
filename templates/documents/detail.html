@@ -75,8 +75,8 @@
                     <a href="{% url 'core:dashboard' %}" class="btn btn-light fw-bold rounded-pill flex-grow-1 text-muted shadow-sm">
                         <i class="bi bi-arrow-left"></i> Quay lại
                     </a>
-                    
-                    <form action="{% url 'documents:delete' document.pk %}" method="POST" class="m-0 flex-grow-1" onsubmit="return confirm('Bạn có chắc chắn muốn xóa tài liệu này?');">
+        
+                    <form id="delete-doc-form" action="{% url 'documents:delete' document.pk %}" method="POST" class="m-0 flex-grow-1">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-outline-danger fw-bold rounded-pill w-100 shadow-sm"><i class="bi bi-trash"></i> Xóa</button>
                     </form>
@@ -121,11 +121,43 @@
 </div>
 
 <script>
+
 function copyText() {
     const text = document.querySelector('pre').innerText;
     navigator.clipboard.writeText(text).then(() => {
-        alert('✅ Đã copy văn bản vào clipboard!');
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: 'Đã copy vào bộ nhớ tạm!',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'colored-toast'
+            }
+        });
     });
 }
+
+
+document.getElementById('delete-doc-form').addEventListener('submit', function(e) {
+    e.preventDefault(); 
+    Swal.fire({
+        title: 'Bạn có chắc chắn?',
+        text: "Tài liệu này sẽ bị xóa vĩnh viễn!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d', 
+        confirmButtonText: '<i class="bi bi-trash"></i> Xác Nhận',
+        cancelButtonText: 'Hủy Bỏ',
+        backdrop: `rgba(0,0,0,0.5)`
+    }).then((result) => {
+        if (result.isConfirmed) {
+            this.submit(); 
+        }
+    });
+});
 </script>
 {% endblock %}

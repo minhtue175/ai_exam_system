@@ -1,6 +1,9 @@
+import os
 from django.db import models
 from apps.core.models import TimeStampedModel
 from django.conf import settings
+from django.db.models.signals import post_delete
+from django.dispatch import receiver
 
 class Document(TimeStampedModel):
     """Document model for file storage"""
@@ -29,3 +32,13 @@ class Document(TimeStampedModel):
     
     def __str__(self):
         return self.filename
+
+@receiver(post_delete, sender=Document)
+def auto_delete_file_on_delete(sender, instance, **kwargs):
+    """
+    Tự động xóa file vật lý (PDF/Word) khỏi thư mục media/ 
+    khi người dùng xóa Document trên web hoặc qua Admin.
+    """
+    if instance.file_path:
+        if os.path.isfile(instance.file_path.path):
+            os.remove(instance.file_path.path)

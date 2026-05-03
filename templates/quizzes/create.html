@@ -90,7 +90,7 @@ form.submitting button[type="submit"] {
     opacity: 0.8;
 }
 
-/* Ẩn icon magic khi loading */
+
 form.submitting button[type="submit"] i {
     display: none;
 }
@@ -114,12 +114,13 @@ form.submitting button[type="submit"]::after {
 </style>
 
 <script>
-// Logic JS giữ nguyên của bạn để tạo hiệu ứng xoay xoay khi click
+
 document.getElementById('quizForm').addEventListener('submit', function(e) {
     this.classList.add('submitting');
     const btn = document.getElementById('submitBtn');
     btn.innerHTML = 'Hệ thống AI đang phân tích...';
 });
+
 </script>
 {% endblock %}
 

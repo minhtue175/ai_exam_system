@@ -219,11 +219,11 @@
     </script>
 
   <script>
-    console.log("⏳ Đang khởi tạo WebSocket...");
+    console.log("Đang khởi tạo WebSocket...");
     const socket = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
 
     socket.onopen = function(e) {
-        console.log("✅ Nối ống nước (WebSocket) THÀNH CÔNG!");
+        console.log("Kết nối WebSocket THÀNH CÔNG!");
     };
 
     socket.onmessage = function(e) {
@@ -236,7 +236,7 @@
             confirmButtonText: 'Xem đề ngay',
             confirmButtonColor: '#6a35ff',
             allowOutsideClick: false, 
-            backdrop: `rgba(0,0,123,0.4)` // Hiệu ứng tối nền
+            backdrop: `rgba(0,0,123,0.4)`
         }).then((result) => {
             if (result.isConfirmed) {
                 window.location.reload();

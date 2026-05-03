@@ -1,4 +1,8 @@
 import random
+import redis
+import weasyprint
+
+from django.conf import settings
 from django.shortcuts import render, redirect, get_object_or_404
 
 from django.contrib import messages
@@ -8,7 +12,7 @@ from django.utils import timezone
 from django.http import HttpResponse
 
 from django.template.loader import render_to_string
-import weasyprint
+
 
 
 from .models import Quiz, UserQuizAttempt
@@ -33,12 +37,24 @@ def quiz_create_view(request, document_id):
     document = get_object_or_404(Document, id=document_id, user=request.user)
     
     if request.method == 'POST':
+       
+        r = redis.Redis.from_url(settings.CELERY_BROKER_URL)
+        redis_key = f"spam_lock_quiz_{request.user.id}"
+        
+        if r.exists(redis_key):
+            messages.warning(request, "⚠️ Bạn thao tác quá nhanh! Vui lòng đợi khoảng 30 giây để AI xử lý trước khi tạo thêm đề mới.")
+            return redirect('documents:detail', pk=document_id) 
+            
+        
+        r.set(redis_key, 'locked', ex=30)
+        
+
         num_questions = int(request.POST.get('num_questions', 5))
         difficulty = request.POST.get('difficulty', 'medium')
         
         
         try:
-            # GỌI CELERY: Dùng hàm .delay() để ném việc vào Redis
+            
             generate_quiz_task.delay(
                 document_id=document.id,
                 user_id=request.user.id,
@@ -46,7 +62,7 @@ def quiz_create_view(request, document_id):
                 difficulty=difficulty
             )
             
-            # Trả về thông báo cho user TỨC THÌ, không cần chờ AI
+            
             messages.info(request, "Hệ thống đang phân tích. Vui lòng chờ trong dây lát!")
             return redirect('quizzes:list')
         
