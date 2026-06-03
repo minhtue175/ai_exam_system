@@ -1,70 +1,84 @@
 # 🎓 Hệ thống Lưu trữ Tài liệu và Tự động Tạo Đề thi bằng AI
 
 ### 📝 Mô tả dự án
-Một hệ thống web hiện đại được xây dựng trên nền tảng **Django**, cho phép người dùng quản lý tài liệu lưu trữ và ứng dụng sức mạnh của **Gemini AI** để tự động biên soạn các bộ đề thi trắc nghiệm chất lượng cao. Hệ thống được thiết kế với kiến trúc chịu tải tốt, tích hợp xử lý tác vụ nền bất đồng bộ giúp tối ưu hóa hiệu năng và trải nghiệm người dùng.
+Một hệ thống web hiện đại được xây dựng trên nền tảng **Django**, cho phép người dùng quản lý tài liệu lưu trữ tập trung và ứng dụng sức mạnh của **Gemini AI** để tự động biên soạn các bộ đề thi trắc nghiệm chất lượng cao. Dự án hướng tới sự tinh gọn, tối ưu hóa hiệu suất và nâng cao trải nghiệm người dùng với giao diện sáng sủa, hiện đại.
 
 ### 🚀 Tính năng nổi bật
-* **Quản lý tài liệu thông minh:** Upload và lưu trữ an toàn các định dạng tài liệu (PDF, Word) bằng cách tách biệt file vật lý và cơ sở dữ liệu.
-* **Tự động sinh đề thi (AI-Powered):** Ứng dụng kỹ thuật Prompt Engineering với Google Gemini AI để trích xuất ngữ cảnh, tạo câu hỏi trọng tâm, gài bẫy đáp án nhiễu hợp lý và giữ nguyên thuật ngữ chuyên ngành.
-* **Xử lý bất đồng bộ mượt mà:** Tích hợp hệ thống Background Tasks bằng Celery không gây "treo" giao diện khi AI đang xử lý văn bản nặng.
-* **Môi trường nhất quán:** Đóng gói toàn bộ hệ thống bằng Container để đảm bảo chạy mượt trên mọi thiết bị.
+* **Lưu trữ tài liệu tinh gọn:** Upload và quản lý các định dạng tài liệu (PDF, Word). Hệ thống tập trung hoàn toàn vào việc lưu trữ file vật lý trực tiếp, tối giản hóa quản lý thư mục nhằm tiết kiệm tài nguyên hệ thống và tối ưu tốc độ truy xuất.
+* **Xử lý PDF chuyên sâu:** Tích hợp bộ công cụ tự động đọc, bóc tách văn bản thô từ tài liệu và xuất kết quả đề thi ra định dạng PDF.
+* **Tự động sinh đề thi (AI-Powered):** Ứng dụng kỹ thuật Prompt Engineering với Google Gemini AI để trích xuất ngữ cảnh, tạo câu hỏi trọng tâm, gài bẫy đáp án nhiễu hợp lý và giữ nguyên các thuật ngữ chuyên ngành.
+* **Xử lý bất đồng bộ mượt mà:** Tích hợp hệ thống Background Tasks không gây "treo" giao diện khi hệ thống đang bóc tách file nặng và giao tiếp với AI.
 
 ### 🛠️ Công nghệ & Kiến trúc (Tech Stack)
 * **Backend:** Python, Django
-* **Cơ sở dữ liệu:** PostgreSQL (quản lý qua pgAdmin)
+* **Cơ sở dữ liệu:** PostgreSQL
 * **Message Broker & Task Queue:** Redis, Celery
 * **Trí tuệ nhân tạo:** Google Gemini API (gemini-2.5-flash)
-* **Đóng gói & Triển khai:** Docker, Docker Compose
-* **UI/UX Design:** Figma
+* **Xử lý Tài liệu (PDF/Report):** PyPDF2, ReportLab
+* **UI/UX Design:** Figma (Bright Style)
 
 ---
 
 ### ⚙️ Hướng dẫn cài đặt (Installation & Setup)
 
 **Yêu cầu môi trường (Prerequisites):**
-* Máy tính đã cài đặt [Git](https://git-scm.com/)
-* Máy tính đã cài đặt [Docker](https://www.docker.com/) và **Docker Compose**
+* [Python 3.x](https://www.python.org/)
+* Hệ quản trị CSDL [PostgreSQL](https://www.postgresql.org/)
+* [Redis](https://redis.io/) (Đang chạy ở port mặc định 6379)
 
 **Các bước khởi chạy hệ thống:**
 
 **Bước 1: Clone mã nguồn về máy**
-Mở Terminal/Command Prompt và chạy lệnh:
 ```bash
-git clone https://github.com/minhtue175/ai_exam_system.git
+git clone [https://github.com/minhtue175/ai_exam_system.git](https://github.com/minhtue175/ai_exam_system.git)
 cd ai_exam_system
 ```
 
-**Bước 2: Cấu hình biến môi trường**
-Tạo một file có tên là `.env` ở thư mục gốc của dự án và điền các thông tin bảo mật vào:
+**Bước 2: Cài đặt môi trường ảo và thư viện**
+```bash
+python -m venv venv
+
+# Active môi trường ảo (Windows)
+venv\Scripts\activate
+# Active môi trường ảo (Mac/Linux)
+source venv/bin/activate
+
+# Cài đặt các thư viện cần thiết (Bao gồm Django, PyPDF2, ReportLab, Celery, Redis...)
+pip install -r requirements.txt
+```
+
+**Bước 3: Cấu hình biến môi trường**
+Tạo file `.env` ở thư mục gốc của dự án (ngang hàng với file `manage.py`) và điền thông tin:
 ```env
 # Database Configuration (PostgreSQL)
 POSTGRES_DB=tên_database_của_bạn
 POSTGRES_USER=tên_user_của_bạn
 POSTGRES_PASSWORD=mật_khẩu_db_của_bạn
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
 
 # Google Gemini API
 GEMINI_API_KEY=điền_api_key_gemini_của_bạn_vào_đây
 ```
 
-**Bước 3: Đóng gói và khởi động hệ thống**
-Chỉ cần 1 câu lệnh duy nhất để Docker tự động build và liên kết 4 dịch vụ (Django, PostgreSQL, Redis, Celery):
-```bash
-docker-compose up -d --build
-```
-
 **Bước 4: Khởi tạo Cơ sở dữ liệu và Tạo Admin**
-Sau khi các container đã chạy thành công, tiến hành tạo các bảng dữ liệu và tài khoản quản trị:
 ```bash
-# Chạy migrations để đồng bộ Database
-docker-compose exec web python manage.py migrate
-
-# Tạo tài khoản Admin
-docker-compose exec web python manage.py createsuperuser
+python manage.py migrate
+python manage.py createsuperuser
 ```
 
-**Bước 5: Trải nghiệm**
+**Bước 5: Khởi chạy hệ thống (Yêu cầu mở 2 Terminal riêng biệt)**
+
+*Terminal 1: Chạy Server Django chính*
+```bash
+python manage.py runserver
+```
+
+*Terminal 2: Chạy tiến trình nền Celery (Nhớ active venv trước khi chạy)*
+```bash
+celery -A ai_exam_system worker -l info --pool=solo
+```
+
+**Bước 6: Trải nghiệm**
 * Website chính: `http://localhost:8000`
 * Giao diện quản trị (Admin): `http://localhost:8000/admin`
-
----
-*Lưu ý: Để dừng toàn bộ hệ thống, sử dụng lệnh `docker-compose down`.*
