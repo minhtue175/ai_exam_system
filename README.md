@@ -1,4 +1,5 @@
-Hệ thống Lưu trữ Tài liệu và Tự động Tạo Đề thi bằng AI
+                                          Hệ thống Lưu trữ Tài liệu và Tự động Tạo Đề thi bằng AI
+
 📝 Mô tả dự án
 Một hệ thống web hiện đại được xây dựng trên nền tảng Django, cho phép người dùng quản lý tài liệu lưu trữ và ứng dụng sức mạnh của Gemini AI để tự động biên soạn các bộ đề thi trắc nghiệm chất lượng cao. Hệ thống được thiết kế với kiến trúc chịu tải tốt, tích hợp xử lý tác vụ nền bất đồng bộ giúp tối ưu hóa hiệu năng và trải nghiệm người dùng.
 
