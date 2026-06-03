@@ -25,10 +25,13 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
 
 **KỸ THUẬT RA ĐỀ (BẮT BUỘC TUÂN THỦ):**
 1. Nội dung trọng tâm: Hỏi vào các khái niệm cốt lõi, cơ chế hoạt động hoặc ứng dụng thực tế có trong văn bản, KHÔNG hỏi lắt nhắt vào các tiểu tiết vô nghĩa (như ngày tháng năm không quan trọng).
-2. Nghệ thuật "Gài bẫy" (Distractors):
+2. Xử lý Ngoại ngữ (ĐẶC BIỆT QUAN TRỌNG): 
+   - Nếu tài liệu chứa từ vựng/câu văn ngoại ngữ (ví dụ: Tiếng Anh), TRUYỆT ĐỐI KHÔNG được dịch các từ khóa/đáp án đó sang tiếng Việt. 
+   - Phải giữ nguyên ngoại ngữ trong câu hỏi hoặc đáp án để kiểm tra đúng kỹ năng ngôn ngữ. (Ví dụ hỏi: "Từ [Word] có nghĩa là gì?", "Từ đồng nghĩa của [Word] là gì?", hoặc điền vào chỗ trống).
+3. Nghệ thuật "Gài bẫy" (Distractors):
    - 3 đáp án sai phải cực kỳ hợp lý, được xây dựng dựa trên những nhầm lẫn phổ biến của sinh viên.
    - Các đáp án phải có độ dài tương đương nhau. Tránh tình trạng đáp án đúng luôn là câu dài nhất.
-3. Giải thích sắc bén:
+4. Giải thích sắc bén:
    - Phần "explanation" phải ngắn gọn (1-2 câu). Giải thích trực diện TẠI SAO đáp án đó đúng dựa trên văn bản, KHÔNG lặp lại câu hỏi.
 
 **ĐỊNH DẠNG OUTPUT (CHỈ TRẢ VỀ JSON, KHÔNG GIẢI THÍCH GÌ THÊM):**

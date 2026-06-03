@@ -27,15 +27,15 @@
     <i class="bi bi-stars position-absolute text-white opacity-25" style="font-size: 150px; top: -30px; right: 20px;"></i>
     
     <div class="position-relative z-1">
-        <span class="badge bg-white text-dark mb-3 px-3 py-2 rounded-pill fw-bold">ONLINE SYSTEM</span>
-        <h2 class="fw-bold mb-3 display-6">Sharpen Your Skills With<br>AI-Powered Quizzes</h2>
+        <span class="badge bg-white text-dark mb-3 px-3 py-2 rounded-pill fw-bold">HỆ THỐNG TRỰC TUYẾN</span>
+        <h2 class="fw-bold mb-3 display-6">Nâng cao kỹ năng của bạn với<br>Quizzes được hỗ bởi AI</h2>
         <a href="{% url 'documents:upload' %}" class="btn btn-dark rounded-pill px-4 py-2 mt-2 fw-bold shadow-sm">
-            Join Now <i class="bi bi-play-circle ms-1"></i>
+            Bắt đầu ngay! <i class="bi bi-play-circle ms-1"></i>
         </a>
     </div>
 </div>
 
-<h4 class="fw-bold mb-4">Continue Practicing</h4>
+<h4 class="fw-bold mb-4">Tiếp tục luyện tập</h4>
 <div class="card-custom p-4 mb-5">
     <div class="table-responsive">
         <table class="table table-borderless table-custom align-middle">
@@ -76,7 +76,7 @@
     </div>
 </div>
 
-<h4 class="fw-bold mb-4">Your Documents</h4>
+<h4 class="fw-bold mb-4">Tài liệu của bạn</h4>
 <div class="card-custom p-4 mb-4">
     <div class="table-responsive">
         <table class="table table-borderless table-custom align-middle">
@@ -85,7 +85,7 @@
                     <th>Tên file</th>
                     <th>Loại</th>
                     <th>Trạng thái</th>
-                    <th class="text-end">Actions</th>
+                    <th class="text-end">Hành động</th>
                 </tr>
             </thead>
             <tbody>
@@ -101,15 +101,22 @@
                     </td>
                     <td><span class="badge bg-light text-dark px-3 py-2 rounded-pill border">{{ doc.file_type|upper }}</span></td>
                     <td>
-                        <span class="badge px-3 py-2 rounded-pill 
+                        <span class="badge px-3 py-2 rounded-pill fw-bold
                             {% if doc.status == 'completed' %}bg-success-subtle text-success
                             {% elif doc.status == 'processing' %}bg-warning-subtle text-warning
                             {% else %}bg-danger-subtle text-danger{% endif %}">
-                            {{ doc.status|title }}
+                            
+                            {% if doc.status == 'completed' %}
+                                Hoàn thành
+                            {% elif doc.status == 'processing' %}
+                                Đang xử lý
+                            {% else %}
+                                Lỗi
+                            {% endif %}
                         </span>
                     </td>
                     <td class="text-end">
-                        <a href="{% url 'documents:detail' doc.pk %}" class="text-decoration-none text-primary fw-bold fs-6">Show Details <i class="bi bi-arrow-right-short"></i></a>
+                        <a href="{% url 'documents:detail' doc.pk %}" class="text-decoration-none text-primary fw-bold fs-6">Chi tiết <i class="bi bi-arrow-right-short"></i></a>
                     </td>
                 </tr>
                 {% empty %}
