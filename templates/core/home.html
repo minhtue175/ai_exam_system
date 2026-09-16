@@ -6,59 +6,144 @@
 
 {% block content %}
 <style>
-    /* ===== LANDING PAGE STYLES ===== */
-    .landing-hero {
-        min-height: 88vh;
+    /* ===== FULL-PAGE SNAP SCROLL ===== */
+    html {
+        scroll-snap-type: y mandatory;
+        overflow-y: scroll;
+        scroll-behavior: smooth;
+    }
+
+    .main-wrapper {
+        padding: 0 !important;
+        overflow: visible;
+    }
+
+    .fp-section {
+        min-height: 100vh;
+        scroll-snap-align: start;
         display: flex;
         align-items: center;
+        justify-content: center;
         position: relative;
         overflow: hidden;
-        padding: 60px 0;
+        padding: 40px 60px;
     }
 
-    .landing-hero::before {
-        content: '';
-        position: absolute;
-        top: -120px;
-        right: -120px;
-        width: 500px;
-        height: 500px;
-        background: radial-gradient(circle, rgba(106,53,255,0.12) 0%, transparent 70%);
+    /* ===== SECTION REVEAL ANIMATION ===== */
+    .fp-section .fp-inner {
+        opacity: 0;
+        transform: translateY(60px) scale(0.97);
+        transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fp-section.active .fp-inner {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    /* Stagger children */
+    .fp-section .fp-child {
+        opacity: 0;
+        transform: translateY(40px);
+        transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fp-section.active .fp-child {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .fp-section.active .fp-child:nth-child(1) { transition-delay: 0.15s; }
+    .fp-section.active .fp-child:nth-child(2) { transition-delay: 0.25s; }
+    .fp-section.active .fp-child:nth-child(3) { transition-delay: 0.35s; }
+    .fp-section.active .fp-child:nth-child(4) { transition-delay: 0.45s; }
+    .fp-section.active .fp-child:nth-child(5) { transition-delay: 0.55s; }
+    .fp-section.active .fp-child:nth-child(6) { transition-delay: 0.65s; }
+
+    /* ===== SIDE DOTS NAV ===== */
+    .fp-dots {
+        position: fixed;
+        right: 28px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .fp-dot {
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
-        animation: pulse-glow 6s ease-in-out infinite;
-    }
-
-    .landing-hero::after {
-        content: '';
-        position: absolute;
-        bottom: -80px;
-        left: -80px;
-        width: 350px;
-        height: 350px;
-        background: radial-gradient(circle, rgba(30,59,112,0.1) 0%, transparent 70%);
-        border-radius: 50%;
-        animation: pulse-glow 8s ease-in-out infinite reverse;
-    }
-
-    @keyframes pulse-glow {
-        0%, 100% { transform: scale(1); opacity: 0.7; }
-        50% { transform: scale(1.15); opacity: 1; }
-    }
-
-    @keyframes float-up {
-        0% { transform: translateY(40px); opacity: 0; }
-        100% { transform: translateY(0); opacity: 1; }
-    }
-
-    @keyframes fade-in-scale {
-        0% { transform: scale(0.9); opacity: 0; }
-        100% { transform: scale(1); opacity: 1; }
-    }
-
-    .hero-content {
-        animation: float-up 0.8s ease-out;
+        background: rgba(106, 53, 255, 0.18);
+        cursor: pointer;
+        transition: all 0.4s ease;
+        border: none;
+        padding: 0;
         position: relative;
-        z-index: 2;
+    }
+
+    .fp-dot::before {
+        content: attr(data-label);
+        position: absolute;
+        right: 24px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #2b2b36;
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 6px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+
+    .fp-dot:hover::before {
+        opacity: 1;
+    }
+
+    .fp-dot.active {
+        background: var(--primary-color);
+        transform: scale(1.4);
+        box-shadow: 0 0 12px rgba(106, 53, 255, 0.4);
+    }
+
+    /* ===== HERO SECTION ===== */
+    .section-hero {
+        background: var(--bg-body);
+    }
+
+    .section-hero::before {
+        content: '';
+        position: absolute;
+        top: -150px;
+        right: -150px;
+        width: 550px;
+        height: 550px;
+        background: radial-gradient(circle, rgba(106,53,255,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: glow-pulse 6s ease-in-out infinite;
+    }
+
+    .section-hero::after {
+        content: '';
+        position: absolute;
+        bottom: -100px;
+        left: -100px;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(30,59,112,0.08) 0%, transparent 70%);
+        border-radius: 50%;
+        animation: glow-pulse 8s ease-in-out infinite reverse;
+    }
+
+    @keyframes glow-pulse {
+        0%, 100% { transform: scale(1); opacity: 0.6; }
+        50% { transform: scale(1.2); opacity: 1; }
     }
 
     .hero-badge {
@@ -67,25 +152,20 @@
         gap: 8px;
         background: var(--primary-light);
         color: var(--primary-color);
-        padding: 8px 20px;
+        padding: 10px 22px;
         border-radius: 50px;
         font-weight: 700;
-        font-size: 13px;
-        letter-spacing: 0.5px;
-        margin-bottom: 28px;
-    }
-
-    .hero-badge i {
-        font-size: 16px;
-        animation: pulse-glow 2s ease-in-out infinite;
+        font-size: 14px;
+        letter-spacing: 0.3px;
+        margin-bottom: 30px;
     }
 
     .hero-title {
-        font-size: clamp(36px, 5vw, 56px);
+        font-size: clamp(38px, 5vw, 60px);
         font-weight: 800;
-        line-height: 1.15;
+        line-height: 1.12;
         color: var(--text-main);
-        margin-bottom: 24px;
+        margin-bottom: 26px;
     }
 
     .hero-title .gradient-text {
@@ -97,37 +177,36 @@
     .hero-desc {
         font-size: 18px;
         color: var(--text-muted);
-        max-width: 520px;
-        line-height: 1.7;
-        margin-bottom: 36px;
+        max-width: 500px;
+        line-height: 1.75;
+        margin-bottom: 40px;
     }
 
     .hero-actions {
         display: flex;
         gap: 14px;
         flex-wrap: wrap;
-        align-items: center;
     }
 
-    .btn-primary-grad {
+    .btn-grad {
         background: var(--fluesy-grad);
         color: #fff;
         border: none;
-        padding: 15px 36px;
+        padding: 16px 38px;
         border-radius: 50px;
         font-weight: 700;
         font-size: 16px;
-        transition: all 0.3s ease;
-        box-shadow: 0 6px 25px rgba(106, 53, 255, 0.25);
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        transition: all 0.35s ease;
+        box-shadow: 0 8px 28px rgba(106, 53, 255, 0.25);
     }
 
-    .btn-primary-grad:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 35px rgba(106, 53, 255, 0.35);
+    .btn-grad:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 14px 40px rgba(106, 53, 255, 0.35);
         color: #fff;
     }
 
@@ -135,75 +214,53 @@
         color: var(--primary-color);
         border: 2px solid var(--primary-color);
         background: transparent;
-        padding: 13px 32px;
+        padding: 14px 34px;
         border-radius: 50px;
         font-weight: 700;
         font-size: 16px;
-        transition: all 0.3s ease;
         text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 10px;
+        transition: all 0.35s ease;
     }
 
     .btn-outline-brand:hover {
         background: var(--primary-light);
         color: var(--primary-color);
-        transform: translateY(-2px);
+        transform: translateY(-3px);
     }
 
-    /* Hero visual */
-    .hero-visual {
-        animation: fade-in-scale 1s ease-out 0.3s both;
-        position: relative;
-        z-index: 2;
-    }
-
-    .hero-card-mock {
+    /* Hero mock UI card */
+    .hero-mock {
         background: #fff;
         border-radius: 24px;
-        padding: 32px;
-        box-shadow: 0 20px 60px rgba(106, 53, 255, 0.1), 0 4px 20px rgba(0,0,0,0.04);
+        padding: 30px;
+        box-shadow: 0 24px 64px rgba(106, 53, 255, 0.08), 0 4px 16px rgba(0,0,0,0.04);
         position: relative;
     }
 
-    .hero-card-mock::before {
+    .hero-mock::after {
         content: '';
         position: absolute;
         inset: -2px;
         border-radius: 26px;
-        background: linear-gradient(135deg, rgba(106,53,255,0.2), rgba(30,59,112,0.1), transparent);
+        background: linear-gradient(135deg, rgba(106,53,255,0.15), rgba(30,59,112,0.08), transparent);
         z-index: -1;
     }
 
-    .mock-header {
-        display: flex;
-        gap: 8px;
-        margin-bottom: 20px;
-    }
+    .mock-dots { display: flex; gap: 7px; margin-bottom: 18px; }
+    .mock-dots span { width: 11px; height: 11px; border-radius: 50%; }
 
-    .mock-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-    }
-
-    .mock-line {
-        height: 12px;
-        border-radius: 6px;
-        background: #f0f0f5;
-        margin-bottom: 12px;
-    }
-
-    .mock-question {
+    .mock-q-box {
         background: var(--primary-light);
         border-radius: 14px;
-        padding: 18px;
+        padding: 16px;
         margin-bottom: 14px;
     }
 
-    .mock-question .mock-q-label {
-        font-size: 11px;
+    .mock-q-box .label {
+        font-size: 10px;
         font-weight: 700;
         color: var(--primary-color);
         text-transform: uppercase;
@@ -211,50 +268,44 @@
         margin-bottom: 8px;
     }
 
-    .mock-answer {
+    .mock-bar {
+        height: 10px;
+        border-radius: 5px;
+        margin-bottom: 8px;
+    }
+
+    .mock-opt {
         display: flex;
         align-items: center;
         gap: 10px;
         padding: 10px 14px;
         border-radius: 10px;
-        background: #fff;
-        margin-bottom: 8px;
+        background: #f8f9fa;
+        margin-bottom: 7px;
         font-size: 13px;
         color: var(--text-muted);
         font-weight: 500;
     }
 
-    .mock-answer.correct {
+    .mock-opt.correct {
         background: #e8f8ef;
         color: #198754;
         font-weight: 700;
     }
 
-    .mock-answer .mock-radio {
-        width: 18px;
-        height: 18px;
+    .mock-radio {
+        width: 16px; height: 16px;
         border-radius: 50%;
         border: 2px solid #d0d0d8;
         flex-shrink: 0;
     }
 
-    .mock-answer.correct .mock-radio {
+    .mock-opt.correct .mock-radio {
         border-color: #198754;
         background: #198754;
-        position: relative;
     }
 
-    .mock-answer.correct .mock-radio::after {
-        content: '✓';
-        color: #fff;
-        font-size: 11px;
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-    }
-
-    .mock-score {
+    .mock-score-bar {
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -262,48 +313,72 @@
         background: linear-gradient(135deg, #6a35ff, #29539B);
         border-radius: 14px;
         color: #fff;
+        margin-top: 10px;
     }
 
-    .mock-score-value {
-        font-size: 28px;
-        font-weight: 800;
+    .mock-score-bar .score { font-size: 26px; font-weight: 800; }
+
+    /* Scroll indicator */
+    .scroll-indicator {
+        position: absolute;
+        bottom: 36px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        animation: bounce-down 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce-down {
+        0%, 100% { transform: translateX(-50%) translateY(0); opacity: 0.7; }
+        50% { transform: translateX(-50%) translateY(10px); opacity: 1; }
     }
 
     /* ===== FEATURES SECTION ===== */
+    .section-features {
+        background: #fff;
+    }
+
     .section-label {
         display: inline-flex;
         align-items: center;
         gap: 8px;
         background: var(--primary-light);
         color: var(--primary-color);
-        padding: 6px 16px;
+        padding: 7px 18px;
         border-radius: 50px;
         font-weight: 700;
         font-size: 12px;
         letter-spacing: 0.5px;
         text-transform: uppercase;
-        margin-bottom: 16px;
+        margin-bottom: 18px;
     }
 
     .section-title {
-        font-size: clamp(28px, 3.5vw, 40px);
+        font-size: clamp(30px, 3.5vw, 44px);
         font-weight: 800;
         color: var(--text-main);
-        margin-bottom: 16px;
+        margin-bottom: 14px;
     }
 
-    .section-desc {
-        font-size: 16px;
+    .section-subtitle {
+        font-size: 16.5px;
         color: var(--text-muted);
-        max-width: 560px;
-        margin: 0 auto 50px;
+        max-width: 540px;
+        margin: 0 auto 48px;
         line-height: 1.7;
     }
 
     .feature-card {
-        background: #fff;
+        background: var(--bg-body);
         border-radius: 20px;
-        padding: 36px 28px;
+        padding: 34px 26px;
         text-align: center;
         transition: all 0.4s ease;
         border: 1px solid #f0f0f5;
@@ -317,367 +392,428 @@
     }
 
     .feature-icon {
-        width: 72px;
-        height: 72px;
-        border-radius: 20px;
+        width: 68px;
+        height: 68px;
+        border-radius: 18px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 30px;
-        margin-bottom: 22px;
+        font-size: 28px;
+        margin-bottom: 20px;
         transition: all 0.3s ease;
     }
 
     .feature-card:hover .feature-icon {
-        transform: scale(1.1) rotate(-5deg);
+        transform: scale(1.12) rotate(-5deg);
     }
 
-    .feature-card h5 {
-        font-weight: 700;
-        margin-bottom: 12px;
-        color: var(--text-main);
+    .feature-card h5 { font-weight: 700; margin-bottom: 10px; }
+    .feature-card p { color: var(--text-muted); font-size: 14px; line-height: 1.65; margin-bottom: 0; }
+
+    /* ===== HOW IT WORKS SECTION ===== */
+    .section-steps {
+        background: var(--bg-body);
     }
 
-    .feature-card p {
-        color: var(--text-muted);
-        font-size: 14.5px;
-        line-height: 1.65;
-        margin-bottom: 0;
-    }
-
-    /* ===== HOW IT WORKS ===== */
     .step-card {
-        position: relative;
         text-align: center;
-        padding: 30px 24px;
+        padding: 24px;
     }
 
     .step-number {
-        width: 56px;
-        height: 56px;
+        width: 64px;
+        height: 64px;
         border-radius: 50%;
         background: var(--fluesy-grad);
         color: #fff;
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 800;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 20px;
-        box-shadow: 0 6px 20px rgba(106, 53, 255, 0.25);
+        margin-bottom: 22px;
+        box-shadow: 0 8px 24px rgba(106, 53, 255, 0.25);
     }
 
-    .step-card h5 {
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
+    .step-card h5 { font-weight: 700; margin-bottom: 10px; }
+    .step-card p { color: var(--text-muted); font-size: 14.5px; line-height: 1.65; }
 
-    .step-card p {
-        color: var(--text-muted);
-        font-size: 14.5px;
-        line-height: 1.6;
-    }
-
-    .step-connector {
-        position: absolute;
-        top: 58px;
-        right: -40px;
+    .step-arrow {
         color: #d0d0d8;
-        font-size: 28px;
-        z-index: 1;
+        font-size: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    /* ===== STATS ===== */
-    .stats-section {
-        background: linear-gradient(135deg, #1E3B70 0%, #29539B 50%, #6a35ff 100%);
-        border-radius: 28px;
-        padding: 60px 40px;
+    /* ===== STATS SECTION ===== */
+    .section-stats {
+        background: linear-gradient(135deg, #1E3B70 0%, #29539B 40%, #6a35ff 100%);
         color: #fff;
-        position: relative;
-        overflow: hidden;
     }
 
-    .stats-section::before {
+    .section-stats::before {
         content: '';
         position: absolute;
-        top: -60px;
-        right: -60px;
-        width: 280px;
-        height: 280px;
+        top: -80px;
+        right: -80px;
+        width: 350px;
+        height: 350px;
         background: rgba(255,255,255,0.04);
         border-radius: 50%;
     }
 
-    .stats-section::after {
+    .section-stats::after {
         content: '';
         position: absolute;
-        bottom: -40px;
-        left: -40px;
-        width: 200px;
-        height: 200px;
+        bottom: -60px;
+        left: -60px;
+        width: 250px;
+        height: 250px;
         background: rgba(255,255,255,0.03);
         border-radius: 50%;
     }
 
-    .stat-item h2 {
-        font-size: 44px;
+    .stat-value {
+        font-size: clamp(40px, 5vw, 56px);
         font-weight: 800;
         margin-bottom: 6px;
     }
 
-    .stat-item p {
+    .stat-label {
         font-size: 15px;
         opacity: 0.8;
-        margin-bottom: 0;
     }
 
-    /* ===== CTA ===== */
-    .cta-section {
-        text-align: center;
-        padding: 80px 20px;
+    /* ===== CTA SECTION ===== */
+    .section-cta {
+        background: #fff;
     }
 
-    .cta-section h2 {
-        font-size: clamp(28px, 3.5vw, 42px);
+    .cta-title {
+        font-size: clamp(30px, 4vw, 46px);
         font-weight: 800;
-        margin-bottom: 18px;
+        margin-bottom: 20px;
+        line-height: 1.2;
     }
 
-    .cta-section p {
+    .cta-desc {
         font-size: 17px;
         color: var(--text-muted);
-        max-width: 500px;
-        margin: 0 auto 32px;
+        max-width: 480px;
+        margin: 0 auto 36px;
         line-height: 1.7;
     }
 
-    /* ===== FOOTER ===== */
-    .landing-footer {
+    /* ===== FOOTER (inline in last section) ===== */
+    .fp-footer {
+        position: absolute;
+        bottom: 24px;
+        left: 0;
+        right: 0;
         text-align: center;
-        padding: 30px 20px;
-        border-top: 1px solid #f0f0f5;
         color: var(--text-muted);
-        font-size: 14px;
+        font-size: 13px;
     }
 
-    .landing-footer a {
+    .fp-footer a {
         color: var(--primary-color);
         text-decoration: none;
         font-weight: 600;
     }
 </style>
 
-<!-- ============================= HERO ============================= -->
-<section class="landing-hero">
-    <div class="container-fluid px-md-5">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-6 hero-content">
-                <div class="hero-badge">
-                    <i class="bi bi-stars"></i> Được hỗ trợ bởi trí tuệ nhân tạo
+<!-- ===== SIDE DOT NAVIGATION ===== -->
+<nav class="fp-dots" id="fpDots">
+    <button class="fp-dot active" data-index="0" data-label="Trang chủ"></button>
+    <button class="fp-dot" data-index="1" data-label="Tính năng"></button>
+    <button class="fp-dot" data-index="2" data-label="Quy trình"></button>
+    <button class="fp-dot" data-index="3" data-label="Thống kê"></button>
+    <button class="fp-dot" data-index="4" data-label="Bắt đầu"></button>
+</nav>
+
+<!-- ============================================================ -->
+<!-- SECTION 1: HERO                                               -->
+<!-- ============================================================ -->
+<section class="fp-section section-hero active" data-index="0">
+    <div class="fp-inner w-100">
+        <div class="container-fluid px-md-5">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-6">
+                    <div class="fp-child">
+                        <div class="hero-badge">
+                            <i class="bi bi-stars"></i> Được hỗ trợ bởi trí tuệ nhân tạo
+                        </div>
+                    </div>
+                    <div class="fp-child">
+                        <h1 class="hero-title">
+                            Tạo đề thi thông minh<br>
+                            với <span class="gradient-text">Fluesy AI</span>
+                        </h1>
+                    </div>
+                    <div class="fp-child">
+                        <p class="hero-desc">
+                            Upload tài liệu, để AI tự động phân tích và tạo bộ đề thi chất lượng cao chỉ trong vài giây. Luyện tập hiệu quả, nắm vững kiến thức.
+                        </p>
+                    </div>
+                    <div class="fp-child">
+                        <div class="hero-actions">
+                            <a href="{% url 'users:register' %}" class="btn-grad">
+                                Bắt đầu miễn phí <i class="bi bi-arrow-right"></i>
+                            </a>
+                            <a href="{% url 'users:login' %}" class="btn-outline-brand">
+                                <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+                            </a>
+                        </div>
+                    </div>
                 </div>
-                <h1 class="hero-title">
-                    Tạo đề thi thông minh<br>
-                    với <span class="gradient-text">Fluesy AI</span>
-                </h1>
-                <p class="hero-desc">
-                    Upload tài liệu, để AI tự động phân tích và tạo bộ đề thi chất lượng cao chỉ trong vài giây. Luyện tập hiệu quả, nắm vững kiến thức.
-                </p>
-                <div class="hero-actions">
-                    <a href="{% url 'users:register' %}" class="btn-primary-grad">
-                        Bắt đầu miễn phí <i class="bi bi-arrow-right"></i>
+
+                <div class="col-lg-6 fp-child">
+                    <div class="hero-mock">
+                        <div class="mock-dots">
+                            <span style="background:#ff5f57;"></span>
+                            <span style="background:#ffbd2e;"></span>
+                            <span style="background:#28c840;"></span>
+                        </div>
+                        <div class="mock-bar" style="width:55%; background:#f0f0f5;"></div>
+                        <div class="mock-bar" style="width:75%; background:#f0f0f5;"></div>
+                        <div class="mock-q-box">
+                            <div class="label"><i class="bi bi-lightning-fill"></i> Câu hỏi được tạo bởi AI</div>
+                            <div class="mock-bar" style="width:85%; background:rgba(106,53,255,0.12);"></div>
+                            <div class="mock-bar" style="width:60%; background:rgba(106,53,255,0.08);"></div>
+                        </div>
+                        <div class="mock-opt">
+                            <div class="mock-radio"></div> Câu trả lời A
+                        </div>
+                        <div class="mock-opt correct">
+                            <div class="mock-radio"></div> Câu trả lời B — Đáp án đúng ✓
+                        </div>
+                        <div class="mock-opt">
+                            <div class="mock-radio"></div> Câu trả lời C
+                        </div>
+                        <div class="mock-score-bar">
+                            <div>
+                                <div style="font-size:11px;opacity:0.8;text-transform:uppercase;letter-spacing:1px;">Điểm số</div>
+                                <div class="score">9.5<span style="font-size:14px;opacity:0.6;">/10</span></div>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:11px;opacity:0.8;">Kết quả</div>
+                                <div style="font-size:15px;font-weight:700;">19/20 đúng</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="scroll-indicator">
+        <span>LƯỚT XUỐNG</span>
+        <i class="bi bi-chevron-double-down fs-5"></i>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: FEATURES                                           -->
+<!-- ============================================================ -->
+<section class="fp-section section-features" data-index="1">
+    <div class="fp-inner w-100">
+        <div class="container-fluid px-md-5">
+            <div class="text-center fp-child">
+                <span class="section-label"><i class="bi bi-grid-3x3-gap-fill"></i> Tính năng</span>
+                <h2 class="section-title">Mọi thứ bạn cần để ôn thi hiệu quả</h2>
+                <p class="section-subtitle">Fluesy kết hợp AI tiên tiến với trải nghiệm đơn giản, giúp bạn tập trung vào kiến thức.</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3 fp-child">
+                    <div class="feature-card">
+                        <div class="feature-icon" style="background:#fff3e0;color:#f57c00;">
+                            <i class="bi bi-cloud-arrow-up-fill"></i>
+                        </div>
+                        <h5>Upload tài liệu</h5>
+                        <p>Hỗ trợ PDF, DOCX. Chỉ cần tải lên, hệ thống tự động trích xuất nội dung.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 fp-child">
+                    <div class="feature-card">
+                        <div class="feature-icon" style="background:var(--primary-light);color:var(--primary-color);">
+                            <i class="bi bi-robot"></i>
+                        </div>
+                        <h5>AI tạo đề thi</h5>
+                        <p>Trí tuệ nhân tạo tự động sinh câu hỏi trắc nghiệm chất lượng cao từ tài liệu.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 fp-child">
+                    <div class="feature-card">
+                        <div class="feature-icon" style="background:#e8f5e9;color:#2e7d32;">
+                            <i class="bi bi-pencil-square"></i>
+                        </div>
+                        <h5>Làm bài thi online</h5>
+                        <p>Giao diện trực quan, hẹn giờ tự động, chấm điểm tức thì và đáp án chi tiết.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3 fp-child">
+                    <div class="feature-card">
+                        <div class="feature-icon" style="background:#fce4ec;color:#c62828;">
+                            <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                        </div>
+                        <h5>Xuất đề Word</h5>
+                        <p>Tải xuống đề thi dưới dạng file Word (.docx) có đáp án, in ấn chuyên nghiệp.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: HOW IT WORKS                                       -->
+<!-- ============================================================ -->
+<section class="fp-section section-steps" data-index="2">
+    <div class="fp-inner w-100">
+        <div class="container-fluid px-md-5">
+            <div class="text-center fp-child">
+                <span class="section-label"><i class="bi bi-signpost-split-fill"></i> Quy trình</span>
+                <h2 class="section-title">Chỉ 3 bước đơn giản</h2>
+                <p class="section-subtitle">Từ tài liệu thô đến bộ đề thi hoàn chỉnh — nhanh chóng, chính xác, tự động.</p>
+            </div>
+
+            <div class="row g-3 align-items-center justify-content-center">
+                <div class="col-md-3 fp-child">
+                    <div class="step-card">
+                        <div class="step-number">1</div>
+                        <h5>Upload tài liệu</h5>
+                        <p>Kéo thả hoặc chọn file PDF, DOCX. Hệ thống xử lý trong vài giây.</p>
+                    </div>
+                </div>
+                <div class="col-md-1 d-none d-md-flex fp-child">
+                    <div class="step-arrow"><i class="bi bi-arrow-right"></i></div>
+                </div>
+                <div class="col-md-3 fp-child">
+                    <div class="step-card">
+                        <div class="step-number">2</div>
+                        <h5>AI phân tích & tạo đề</h5>
+                        <p>AI đọc hiểu nội dung, trích xuất kiến thức trọng tâm và sinh câu hỏi.</p>
+                    </div>
+                </div>
+                <div class="col-md-1 d-none d-md-flex fp-child">
+                    <div class="step-arrow"><i class="bi bi-arrow-right"></i></div>
+                </div>
+                <div class="col-md-3 fp-child">
+                    <div class="step-card">
+                        <div class="step-number">3</div>
+                        <h5>Luyện tập & đánh giá</h5>
+                        <p>Làm bài online, nhận kết quả tức thì. Theo dõi tiến độ từng ngày.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 4: STATS                                              -->
+<!-- ============================================================ -->
+<section class="fp-section section-stats" data-index="3">
+    <div class="fp-inner w-100">
+        <div class="container-fluid px-md-5">
+            <div class="row g-5 text-center position-relative" style="z-index:2;">
+                <div class="col-6 col-md-3 fp-child">
+                    <div class="stat-value"><i class="bi bi-lightning-fill"></i></div>
+                    <div class="stat-label">Tạo đề trong vài giây</div>
+                </div>
+                <div class="col-6 col-md-3 fp-child">
+                    <div class="stat-value">AI</div>
+                    <div class="stat-label">Được hỗ trợ bởi AI</div>
+                </div>
+                <div class="col-6 col-md-3 fp-child">
+                    <div class="stat-value">100%</div>
+                    <div class="stat-label">Miễn phí sử dụng</div>
+                </div>
+                <div class="col-6 col-md-3 fp-child">
+                    <div class="stat-value">24/7</div>
+                    <div class="stat-label">Truy cập mọi lúc</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: CTA                                                -->
+<!-- ============================================================ -->
+<section class="fp-section section-cta" data-index="4">
+    <div class="fp-inner w-100">
+        <div class="text-center">
+            <div class="fp-child">
+                <span class="section-label"><i class="bi bi-rocket-takeoff-fill"></i> Bắt đầu</span>
+            </div>
+            <div class="fp-child">
+                <h2 class="cta-title">Sẵn sàng nâng cao kết quả<br>học tập của bạn?</h2>
+            </div>
+            <div class="fp-child">
+                <p class="cta-desc">Đăng ký ngay hôm nay và trải nghiệm cách AI thay đổi việc ôn thi của bạn.</p>
+            </div>
+            <div class="fp-child">
+                <div class="hero-actions justify-content-center">
+                    <a href="{% url 'users:register' %}" class="btn-grad">
+                        Tạo tài khoản miễn phí <i class="bi bi-arrow-right"></i>
                     </a>
                     <a href="{% url 'users:login' %}" class="btn-outline-brand">
-                        <i class="bi bi-box-arrow-in-right"></i> Đăng nhập
+                        <i class="bi bi-box-arrow-in-right"></i> Đã có tài khoản?
                     </a>
                 </div>
             </div>
-
-            <!-- Hero Visual Mock -->
-            <div class="col-lg-6 hero-visual">
-                <div class="hero-card-mock">
-                    <div class="mock-header">
-                        <div class="mock-dot" style="background: #ff5f57;"></div>
-                        <div class="mock-dot" style="background: #ffbd2e;"></div>
-                        <div class="mock-dot" style="background: #28c840;"></div>
-                    </div>
-
-                    <div class="mock-line" style="width: 60%;"></div>
-                    <div class="mock-line" style="width: 80%;"></div>
-
-                    <div class="mock-question">
-                        <div class="mock-q-label"><i class="bi bi-lightning-fill"></i> Câu hỏi được tạo bởi AI</div>
-                        <div class="mock-line" style="width: 90%; background: rgba(106,53,255,0.12); height: 10px;"></div>
-                        <div class="mock-line" style="width: 65%; background: rgba(106,53,255,0.08); height: 10px;"></div>
-                    </div>
-
-                    <div class="mock-answer">
-                        <div class="mock-radio"></div>
-                        <span>Câu trả lời A</span>
-                    </div>
-                    <div class="mock-answer correct">
-                        <div class="mock-radio"></div>
-                        <span>Câu trả lời B — Đáp án đúng ✓</span>
-                    </div>
-                    <div class="mock-answer">
-                        <div class="mock-radio"></div>
-                        <span>Câu trả lời C</span>
-                    </div>
-
-                    <div class="mock-score mt-3">
-                        <div>
-                            <div style="font-size: 12px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px;">Điểm số</div>
-                            <div class="mock-score-value">9.5<span style="font-size: 16px; opacity: 0.7;">/10</span></div>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 12px; opacity: 0.8;">Kết quả</div>
-                            <div style="font-size: 16px; font-weight: 700;">19/20 đúng</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
+    </div>
+
+    <div class="fp-footer">
+        <p class="mb-0">© 2026 <a href="/">Fluesy</a>. Hệ thống tạo đề thi thông minh bằng AI. Made with <i class="bi bi-heart-fill text-danger"></i> for learners.</p>
     </div>
 </section>
 
-<!-- ========================= FEATURES ========================= -->
-<section class="py-5 my-5">
-    <div class="container-fluid px-md-5">
-        <div class="text-center">
-            <span class="section-label"><i class="bi bi-grid-3x3-gap-fill"></i> Tính năng</span>
-            <h2 class="section-title">Mọi thứ bạn cần để ôn thi hiệu quả</h2>
-            <p class="section-desc">Fluesy kết hợp AI tiên tiến với trải nghiệm người dùng đơn giản, giúp bạn tập trung vào điều quan trọng nhất — kiến thức.</p>
-        </div>
+<!-- ===== JAVASCRIPT ===== -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sections = document.querySelectorAll('.fp-section');
+    const dots = document.querySelectorAll('.fp-dot');
 
-        <div class="row g-4">
-            <div class="col-md-6 col-lg-3">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #fff3e0; color: #f57c00;">
-                        <i class="bi bi-cloud-arrow-up-fill"></i>
-                    </div>
-                    <h5>Upload tài liệu</h5>
-                    <p>Hỗ trợ PDF, DOCX. Chỉ cần tải lên, hệ thống tự động trích xuất nội dung và phân tích.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: var(--primary-light); color: var(--primary-color);">
-                        <i class="bi bi-robot"></i>
-                    </div>
-                    <h5>AI tạo đề thi</h5>
-                    <p>Trí tuệ nhân tạo tự động sinh câu hỏi trắc nghiệm chất lượng cao từ nội dung tài liệu của bạn.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #e8f5e9; color: #2e7d32;">
-                        <i class="bi bi-pencil-square"></i>
-                    </div>
-                    <h5>Làm bài thi online</h5>
-                    <p>Giao diện làm bài trực quan, hẹn giờ tự động, chấm điểm tức thì và xem đáp án chi tiết.</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="feature-card">
-                    <div class="feature-icon" style="background: #fce4ec; color: #c62828;">
-                        <i class="bi bi-file-earmark-arrow-down-fill"></i>
-                    </div>
-                    <h5>Xuất đề Word</h5>
-                    <p>Tải xuống đề thi dưới dạng file Word (.docx) có đáp án, in ấn chuyên nghiệp.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    // Intersection Observer to detect which section is in view
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                // Remove active from all
+                sections.forEach(s => s.classList.remove('active'));
+                dots.forEach(d => d.classList.remove('active'));
 
-<!-- ====================== HOW IT WORKS ====================== -->
-<section class="py-5 my-4">
-    <div class="container-fluid px-md-5">
-        <div class="text-center">
-            <span class="section-label"><i class="bi bi-signpost-split-fill"></i> Quy trình</span>
-            <h2 class="section-title">Chỉ 3 bước đơn giản</h2>
-            <p class="section-desc">Từ tài liệu thô đến bộ đề thi hoàn chỉnh — nhanh chóng, chính xác, và hoàn toàn tự động.</p>
-        </div>
+                // Add active to current
+                entry.target.classList.add('active');
+                const idx = entry.target.getAttribute('data-index');
+                const activeDot = document.querySelector(`.fp-dot[data-index="${idx}"]`);
+                if (activeDot) activeDot.classList.add('active');
+            }
+        });
+    }, {
+        threshold: 0.45
+    });
 
-        <div class="row g-4 justify-content-center">
-            <div class="col-md-4">
-                <div class="step-card">
-                    <div class="step-number">1</div>
-                    <h5>Upload tài liệu</h5>
-                    <p>Kéo thả hoặc chọn file PDF, DOCX từ máy tính. Hệ thống xử lý trong vài giây.</p>
-                    <span class="step-connector d-none d-md-inline"><i class="bi bi-chevron-right"></i></span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="step-card">
-                    <div class="step-number">2</div>
-                    <h5>AI phân tích & tạo đề</h5>
-                    <p>AI đọc hiểu nội dung, trích xuất kiến thức trọng tâm và tự động sinh câu hỏi.</p>
-                    <span class="step-connector d-none d-md-inline"><i class="bi bi-chevron-right"></i></span>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="step-card">
-                    <div class="step-number">3</div>
-                    <h5>Luyện tập & đánh giá</h5>
-                    <p>Làm bài online, nhận kết quả tức thì. Theo dõi tiến độ và cải thiện từng ngày.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    sections.forEach(section => observer.observe(section));
 
-<!-- ========================= STATS ========================= -->
-<section class="py-5 my-5">
-    <div class="container-fluid px-md-5">
-        <div class="stats-section">
-            <div class="row g-4 text-center position-relative" style="z-index: 2;">
-                <div class="col-6 col-md-3">
-                    <div class="stat-item">
-                        <h2><i class="bi bi-lightning-fill" style="font-size: 36px;"></i></h2>
-                        <p>Tạo đề trong vài giây</p>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stat-item">
-                        <h2>AI</h2>
-                        <p>Được hỗ trợ bởi AI</p>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stat-item">
-                        <h2>100%</h2>
-                        <p>Miễn phí sử dụng</p>
-                    </div>
-                </div>
-                <div class="col-6 col-md-3">
-                    <div class="stat-item">
-                        <h2>24/7</h2>
-                        <p>Truy cập mọi lúc</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+    // Dot click navigation
+    dots.forEach(dot => {
+        dot.addEventListener('click', function() {
+            const idx = this.getAttribute('data-index');
+            const target = document.querySelector(`.fp-section[data-index="${idx}"]`);
+            if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    });
 
-<!-- ========================== CTA ========================== -->
-<section class="cta-section">
-    <h2>Sẵn sàng nâng cao kết quả<br>học tập của bạn?</h2>
-    <p>Đăng ký ngay hôm nay và trải nghiệm cách AI thay đổi việc ôn thi của bạn.</p>
-    <div class="hero-actions justify-content-center">
-        <a href="{% url 'users:register' %}" class="btn-primary-grad">
-            Tạo tài khoản miễn phí <i class="bi bi-arrow-right"></i>
-        </a>
-        <a href="{% url 'users:login' %}" class="btn-outline-brand">
-            <i class="bi bi-box-arrow-in-right"></i> Đã có tài khoản?
-        </a>
-    </div>
-</section>
-
-<!-- ======================== FOOTER ======================== -->
-<footer class="landing-footer">
-    <p class="mb-1">© 2026 <a href="/">Fluesy</a>. Hệ thống tạo đề thi thông minh bằng AI.</p>
-    <p class="mb-0" style="font-size: 13px; opacity: 0.7;">Made with <i class="bi bi-heart-fill text-danger"></i> for learners.</p>
-</footer>
+    // Activate first section on load
+    sections[0].classList.add('active');
+});
+</script>
 
 {% endblock %}
