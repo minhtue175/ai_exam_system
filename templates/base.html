@@ -150,6 +150,22 @@
 </head>
 <body>
 
+    {% if not user.is_authenticated %}
+    <nav class="navbar navbar-expand px-4 py-3" style="background: var(--bg-card); border-bottom: 1px solid #f0f0f5; position: sticky; top: 0; z-index: 1000;">
+        <a href="/" class="brand-logo mb-0" style="font-size: 24px;">
+            <i class="bi bi-bezier2"></i> Fluesy
+        </a>
+        <div class="ms-auto d-flex gap-2 align-items-center">
+            <a href="{% url 'users:login' %}" class="btn rounded-pill px-4 py-2 fw-bold" style="color: var(--primary-color); border: 2px solid var(--primary-color); background: transparent; transition: all 0.3s ease;">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
+            </a>
+            <a href="{% url 'users:register' %}" class="btn rounded-pill px-4 py-2 fw-bold text-white shadow-sm" style="background: var(--fluesy-grad); border: none; transition: all 0.3s ease;">
+                Đăng ký <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </nav>
+    {% endif %}
+
     {% if user.is_authenticated %}
     <div class="left-sidebar">
         <a href="/" class="brand-logo">
