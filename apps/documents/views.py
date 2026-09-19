@@ -1,5 +1,8 @@
+import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
+from django.http import FileResponse, Http404
 from django.contrib import messages
 from django.core.exceptions import ValidationError
 
@@ -71,6 +74,21 @@ def document_detail_view(request, pk):
 
 
 @login_required
+def document_download_view(request, pk):
+    """Tải file tài liệu an toàn, kiểm tra quyền sở hữu của user (chống IDOR/lộ link static)"""
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    if not document.file_path or not os.path.exists(document.file_path.path):
+        raise Http404("Tài liệu không tồn tại hoặc file vật lý đã bị xóa.")
+    
+    return FileResponse(
+        open(document.file_path.path, 'rb'),
+        as_attachment=True,
+        filename=document.filename
+    )
+
+
+@login_required
 def document_delete_view(request, pk):
     """Xóa tài liệu"""
     document = get_object_or_404(Document, pk=pk, user=request.user)
@@ -88,8 +106,9 @@ def document_delete_view(request, pk):
 
 
 @login_required
+@require_POST
 def extract_text_view(request, pk):
-    """Chức năng trích xuất lại văn bản (Dùng khi quá trình tự động bị lỗi)"""
+    """Chức năng trích xuất lại văn bản (Bảo vệ bằng POST + CSRF token)"""
     document = get_object_or_404(Document, pk=pk, user=request.user)
     
     try:

@@ -1,12 +1,14 @@
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
 from apps.quizzes.models import Quiz
 from .services.export_services import prepare_quiz_data, generate_word_document, generate_pdf_document
 import urllib.parse
 
+@login_required
 def export_word_view(request, quiz_id):
-    # 1. Tìm cái đề thi mà người dùng muốn tải
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    # 1. Tìm đề thi - CHỈ cho phép tải đề thuộc sở hữu của người dùng hiện tại (chống IDOR)
+    quiz = get_object_or_404(Quiz, id=quiz_id, user=request.user)
     
     # 2. Hứng các tham số từ URL (VD: ?mode=teacher&shuffle=true)
     mode = request.GET.get('mode', 'student') # Mặc định là bản sinh viên
@@ -34,8 +36,10 @@ def export_word_view(request, quiz_id):
     
     return response
 
+@login_required
 def export_pdf_view(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    # 1. Tìm đề thi - CHỈ cho phép tải đề thuộc sở hữu của người dùng hiện tại (chống IDOR)
+    quiz = get_object_or_404(Quiz, id=quiz_id, user=request.user)
     mode = request.GET.get('mode', 'student')
     should_shuffle = request.GET.get('shuffle') == 'true'
     

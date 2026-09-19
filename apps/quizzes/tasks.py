@@ -18,8 +18,8 @@ def generate_quiz_task(document_id, user_id, num_questions, difficulty):
     """
     try:
        
-        document = Document.objects.get(id=document_id)
         user = User.objects.get(id=user_id)
+        document = Document.objects.get(id=document_id, user=user)
         
         logger.info(f"Bắt đầu tạo ngầm Quiz cho Document {document_id} - User {user.username}")
         

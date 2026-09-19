@@ -234,9 +234,11 @@
         });
     </script>
 
+  {% if user.is_authenticated %}
   <script>
     console.log("Đang khởi tạo WebSocket...");
-    const socket = new WebSocket('ws://' + window.location.host + '/ws/notifications/');
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const socket = new WebSocket(wsProtocol + window.location.host + '/ws/notifications/');
 
     socket.onopen = function(e) {
         console.log("Kết nối WebSocket THÀNH CÔNG!");
@@ -261,9 +263,10 @@
     };
 
     socket.onclose = function(e) {
-        console.error("❌ WebSocket bị ngắt kết nối. Mã lỗi:", e.code);
+        console.warn("WebSocket đã đóng (code: " + e.code + ").");
     };
-</script>
+  </script>
+  {% endif %}
 
 </body>
 </html>

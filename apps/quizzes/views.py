@@ -38,19 +38,28 @@ def quiz_create_view(request, document_id):
     
     if request.method == 'POST':
        
-        r = redis.Redis.from_url(settings.CELERY_BROKER_URL)
-        redis_key = f"spam_lock_quiz_{request.user.id}"
-        
-        if r.exists(redis_key):
-            messages.warning(request, "⚠️ Bạn thao tác quá nhanh! Vui lòng đợi khoảng 30 giây để AI xử lý trước khi tạo thêm đề mới.")
-            return redirect('documents:detail', pk=document_id) 
-            
-        
-        r.set(redis_key, 'locked', ex=30)
-        
+        try:
+            r = redis.Redis.from_url(settings.CELERY_BROKER_URL)
+            redis_key = f"spam_lock_quiz_{request.user.id}"
+            if r.exists(redis_key):
+                messages.warning(request, "⚠️ Bạn thao tác quá nhanh! Vui lòng đợi khoảng 30 giây để AI xử lý trước khi tạo thêm đề mới.")
+                return redirect('documents:detail', pk=document_id)
+            r.set(redis_key, 'locked', ex=30)
+        except Exception:
+            pass
 
-        num_questions = int(request.POST.get('num_questions', 5))
+        try:
+            num_questions = int(request.POST.get('num_questions', 5))
+            if num_questions < 1 or num_questions > 40:
+                messages.error(request, "Số câu hỏi phải từ 1 đến 40.")
+                return redirect('documents:detail', pk=document_id)
+        except (ValueError, TypeError):
+            messages.error(request, "Số câu hỏi không hợp lệ.")
+            return redirect('documents:detail', pk=document_id)
+
         difficulty = request.POST.get('difficulty', 'medium')
+        if difficulty not in ['easy', 'medium', 'hard', 'basic', 'advanced']:
+            difficulty = 'medium'
         
         
         try:
@@ -122,7 +131,10 @@ def quiz_take_view(request, pk):
         for q in shuffled_questions:
             selected_idx = request.POST.get(f"question_{q['id']}")
             if selected_idx is not None:
-                user_answers[int(q['id'])] = int(selected_idx)
+                try:
+                    user_answers[int(q['id'])] = int(selected_idx)
+                except (ValueError, TypeError):
+                    continue
                 
         # 3. Dùng GradingService để chấm điểm
         grading_result = GradingService.grade_shuffled_quiz(shuffled_questions, user_answers)

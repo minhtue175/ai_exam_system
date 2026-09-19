@@ -19,15 +19,12 @@ class DocumentUploadForm(forms.ModelForm):
     
     def clean_file_path(self):
         file = self.cleaned_data.get('file_path')
-        
         if file:
-            # Kiểm tra extension
-            ext = file.name.split('.')[-1].lower()
-            if ext not in ['pdf', 'doc', 'docx']:
-                raise forms.ValidationError('Chỉ chấp nhận file PDF hoặc Word!')
-            
-            # Kiểm tra kích thước (max 10MB)
-            if file.size > 20 * 1024 * 1024:
-                raise forms.ValidationError('File không được vượt quá 20MB!')
-        
+            from .services.document_processor import DocumentProcessor
+            try:
+                DocumentProcessor.validate_file(file)
+            except forms.ValidationError:
+                raise
+            except Exception as e:
+                raise forms.ValidationError(f"Lỗi kiểm tra file: {str(e)}")
         return file

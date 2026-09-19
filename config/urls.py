@@ -19,8 +19,6 @@ urlpatterns = [
     path('exports/', include('apps.exports.urls')),
 
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    
-    path('exports/', include('apps.exports.urls')),
 ]
 
 
