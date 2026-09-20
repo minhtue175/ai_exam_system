@@ -3,6 +3,7 @@ import redis
 import weasyprint
 
 from django.conf import settings
+from django.core.paginator import Paginator
 from django.shortcuts import render, redirect, get_object_or_404
 
 from django.contrib import messages
@@ -29,7 +30,9 @@ def quiz_list_view(request):
     """Hiển thị danh sách các bài Quiz đã tạo (Chỉ của user hiện tại)"""
     
     quizzes = Quiz.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'quizzes/list.html', {'quizzes': quizzes})
+    paginator = Paginator(quizzes, 9)  # 9 per page (3x3 grid)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    return render(request, 'quizzes/list.html', {'quizzes': page_obj, 'page_obj': page_obj})
 
 @login_required
 def quiz_create_view(request, document_id):

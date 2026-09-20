@@ -87,5 +87,76 @@ def logout_view(request):
 
 @login_required
 def profile_view(request):
-    """User Profile"""
-    return render(request, 'users/profile.html')
+    """User Profile — Xem và chỉnh sửa thông tin cá nhân"""
+    from apps.documents.models import Document
+    from apps.quizzes.models import UserQuizAttempt
+    from django.db.models import Avg, Count
+
+    user = request.user
+
+    # Stats
+    total_quizzes = UserQuizAttempt.objects.filter(user=user).count()
+    avg_score = UserQuizAttempt.objects.filter(user=user).aggregate(avg=Avg('score'))['avg'] or 0
+    total_documents = Document.objects.filter(user=user).count()
+    recent_attempts = UserQuizAttempt.objects.filter(user=user).select_related('quiz').order_by('-completed_at')[:5]
+
+    if request.method == 'POST':
+        action = request.POST.get('action', 'update_profile')
+
+        if action == 'update_profile':
+            new_username = request.POST.get('username', '').strip()
+            new_email = request.POST.get('email', '').strip().lower()
+            new_phone = request.POST.get('phone', '').strip()
+
+            # Validate username
+            if new_username and new_username != user.username:
+                from .models import User
+                if User.objects.filter(username__iexact=new_username).exclude(pk=user.pk).exists():
+                    messages.error(request, 'Tên đăng nhập đã tồn tại!')
+                    return redirect('users:profile')
+                user.username = new_username
+
+            # Validate email
+            if new_email and new_email != user.email:
+                from .models import User
+                if User.objects.filter(email__iexact=new_email).exclude(pk=user.pk).exists():
+                    messages.error(request, 'Email đã được sử dụng!')
+                    return redirect('users:profile')
+                user.email = new_email
+
+            user.phone = new_phone
+
+            # Avatar upload
+            if 'avatar' in request.FILES:
+                user.avatar = request.FILES['avatar']
+
+            user.save()
+            messages.success(request, '✅ Cập nhật thông tin thành công!')
+            return redirect('users:profile')
+
+        elif action == 'change_password':
+            from django.contrib.auth import update_session_auth_hash
+            old_password = request.POST.get('old_password', '')
+            new_password = request.POST.get('new_password', '')
+            confirm_password = request.POST.get('confirm_password', '')
+
+            if not user.check_password(old_password):
+                messages.error(request, 'Mật khẩu hiện tại không đúng!')
+            elif len(new_password) < 8:
+                messages.error(request, 'Mật khẩu mới phải có ít nhất 8 ký tự!')
+            elif new_password != confirm_password:
+                messages.error(request, 'Mật khẩu xác nhận không khớp!')
+            else:
+                user.set_password(new_password)
+                user.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, '✅ Đổi mật khẩu thành công!')
+            return redirect('users:profile')
+
+    context = {
+        'total_quizzes': total_quizzes,
+        'avg_score': round(avg_score, 1),
+        'total_documents': total_documents,
+        'recent_attempts': recent_attempts,
+    }
+    return render(request, 'users/profile.html', context)

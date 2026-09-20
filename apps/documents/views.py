@@ -1,6 +1,7 @@
 import os
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.http import FileResponse, Http404
 from django.contrib import messages
@@ -53,7 +54,9 @@ def upload_view(request):
 def document_list_view(request):
     """Hiển thị danh sách tất cả tài liệu của user"""
     documents = Document.objects.filter(user=request.user).order_by('-created_at')
-    return render(request, 'documents/list.html', {'documents': documents})
+    paginator = Paginator(documents, 10)  # 10 per page
+    page_obj = paginator.get_page(request.GET.get('page'))
+    return render(request, 'documents/list.html', {'documents': page_obj, 'page_obj': page_obj})
 
 
 @login_required
