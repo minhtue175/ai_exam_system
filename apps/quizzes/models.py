@@ -29,6 +29,10 @@ class Quiz(TimeStampedModel):
         choices=DIFFICULTY_CHOICES,
         default='basic'
     )
+    duration_minutes = models.IntegerField(
+        default=15,
+        help_text="Thời gian làm bài tính theo phút (0 = không giới hạn)"
+    )
     
     class Meta:
         db_table = 'quizzes'
@@ -100,6 +104,7 @@ class UserQuizAttempt(TimeStampedModel):
     total_questions = models.IntegerField(default=0)
     correct_answers = models.IntegerField(default=0)
     score = models.DecimalField(max_digits=5, decimal_places=2, default=0.00) # Điểm hệ 10 hoặc 100
+    time_spent_seconds = models.IntegerField(default=0, help_text="Thời gian hoàn thành tính bằng giây")
     
   
     completed_at = models.DateTimeField(null=True, blank=True)

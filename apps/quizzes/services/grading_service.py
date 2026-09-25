@@ -58,7 +58,8 @@ class GradingService:
         quiz: Quiz,
         user,
         user_answers: Dict[int, int],
-        grading_result: Dict
+        grading_result: Dict,
+        time_spent_seconds: int = 0
     ) -> UserQuizAttempt:
         """Save quiz attempt to database"""
         attempt = UserQuizAttempt.objects.create(
@@ -70,6 +71,7 @@ class GradingService:
             correct_answers=grading_result['correct_answers'],
             details=grading_result['results'], # Đẩy cục JSON vào DB
             score=grading_result['score'],
+            time_spent_seconds=time_spent_seconds,
             completed_at=timezone.now()
         )
         
