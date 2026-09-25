@@ -24,7 +24,32 @@
                         <p class="mb-1"><strong>📊 Số từ:</strong> {{ document.extracted_text|wordcount }} từ</p>
                         <p class="mb-0"><strong>🤖 AI sẽ tạo câu hỏi dựa trên nội dung tài liệu này.</strong></p>
                     </div>
-                    
+
+                    <div class="d-flex align-items-center justify-content-between p-3 mb-4 rounded-3 border" style="background: linear-gradient(135deg, #f8f9fa 0%, #eef2f7 100%);">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm" style="width: 44px; height: 44px; background: white; font-size: 1.3rem;">
+                                ⚡
+                            </div>
+                            <div>
+                                <strong class="d-block text-dark">Hạn mức tạo đề AI:</strong>
+                                <small class="text-muted">Bình chứa 5 lượt, tự động hồi 1 lượt mỗi 10 phút</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if tokens_available >= 3 %}bg-success{% elif tokens_available >= 1 %}bg-warning text-dark{% else %}bg-danger{% endif %} fs-6 px-3 py-2 rounded-pill shadow-sm">
+                                <i class="bi bi-battery-charging me-1"></i> {{ tokens_available }} / 5 lượt khả dụng
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if tokens_available == 0 %}
+                    <div class="alert alert-danger border-danger mb-4 shadow-sm">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>Bạn đã dùng hết hạn mức tạo đề AI lúc này!</strong>
+                        <p class="mb-0 mt-1">Vui lòng nghỉ ngơi khoảng <strong>{{ wait_minutes }} phút</strong> để hệ thống tự nạp lại năng lượng nhé ☕.</p>
+                    </div>
+                    {% endif %}
+
                     <form method="post" id="quizForm">
                         {% csrf_token %}
                         
@@ -49,17 +74,11 @@
                         </div>
                         
                         <div class="alert alert-warning border-warning">
-                            <strong>⏱️ Lưu ý:</strong> Quá trình tạo câu hỏi bằng AI có thể mất:
-                            <ul class="mb-0 mt-2">
-                                <li><strong>5-10 câu:</strong> 10-20 giây</li>
-                                <li><strong>10-20 câu:</strong> 20-40 giây</li>
-                                <li><strong>20-40 câu:</strong> 40-90 giây</li>
-                            </ul>
-                            Vui lòng đợi và <strong class="text-danger">KHÔNG tắt trang</strong>!
+                            <strong>⏱️ Tốc độ xử lý:</strong> Nhờ thuật toán song song hóa, việc tạo 10–40 câu chỉ mất khoảng <strong>15–20 giây</strong>.
                         </div>
                         
                         <div class="d-flex gap-3 mt-4">
-                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1" id="submitBtn">
+                            <button type="submit" class="btn btn-primary btn-lg flex-grow-1" id="submitBtn" {% if tokens_available == 0 %}disabled{% endif %}>
                                 <i class="bi bi-magic"></i> Bắt đầu Tạo Quiz
                             </button>
                             <a href="{% url 'quizzes:list' %}" class="btn btn-secondary btn-lg px-4">

@@ -73,3 +73,103 @@ class RateLimiter:
             cache.delete(f"lock:{key}")
         except Exception as e:
             logger.warning(f"Cache error in reset: {e}")
+
+
+class TokenBucket:
+    """
+    Thuật toán Token Bucket Rate Limiter (Bình Chứa Token Ảo):
+    - capacity: Dung lượng tối đa của bình (mặc định 5 tokens = 5 lượt tạo đề AI).
+    - refill_time_seconds: Thời gian để tự động hồi phục 1 token (mặc định 600s = 10 phút/token).
+    - Giúp bảo vệ quota API Gemini, chống spam và phân phối lượt dùng bền vững cho người học.
+    """
+
+    @classmethod
+    def get_status(
+        cls,
+        key: str,
+        capacity: float = 5.0,
+        refill_time_seconds: float = 600.0
+    ) -> tuple[int, int]:
+        """
+        Lấy trạng thái hiện tại của bình mà không tiêu thụ token.
+        Trả về: (tokens_available, wait_seconds_for_next_refill)
+        """
+        try:
+            cache_key = f"token_bucket:{key}"
+            data = cache.get(cache_key)
+            now = time.time()
+
+            if data is None:
+                return int(capacity), 0
+
+            tokens = float(data.get('tokens', capacity))
+            last_updated = float(data.get('last_updated', now))
+
+            # Tính toán lượng token tự động hồi dựa trên thời gian trôi qua
+            elapsed = max(0.0, now - last_updated)
+            refill_rate = 1.0 / refill_time_seconds
+            current_tokens = min(capacity, tokens + elapsed * refill_rate)
+
+            if current_tokens < capacity:
+                wait_seconds = int((1.0 - (current_tokens % 1.0)) * refill_time_seconds)
+            else:
+                wait_seconds = 0
+
+            return int(current_tokens), wait_seconds
+        except Exception as e:
+            logger.warning(f"Cache error in TokenBucket.get_status: {e}")
+            return int(capacity), 0
+
+    @classmethod
+    def consume(
+        cls,
+        key: str,
+        cost: float = 1.0,
+        capacity: float = 5.0,
+        refill_time_seconds: float = 600.0
+    ) -> tuple[bool, int, int]:
+        """
+        Tiêu thụ token từ bình:
+        Trả về: (is_allowed, remaining_tokens, wait_seconds_until_refill)
+        """
+        try:
+            cache_key = f"token_bucket:{key}"
+            data = cache.get(cache_key)
+            now = time.time()
+
+            if data is None:
+                current_tokens = capacity
+                last_updated = now
+            else:
+                tokens = float(data.get('tokens', capacity))
+                last_updated = float(data.get('last_updated', now))
+                elapsed = max(0.0, now - last_updated)
+                refill_rate = 1.0 / refill_time_seconds
+                current_tokens = min(capacity, tokens + elapsed * refill_rate)
+
+            if current_tokens >= cost:
+                new_tokens = current_tokens - cost
+                cache_ttl = int(capacity * refill_time_seconds * 2)
+                cache.set(cache_key, {
+                    'tokens': new_tokens,
+                    'last_updated': now
+                }, timeout=cache_ttl)
+
+                wait_seconds = int(refill_time_seconds) if new_tokens < capacity else 0
+                return True, int(new_tokens), wait_seconds
+            else:
+                missing = cost - current_tokens
+                wait_seconds = max(1, int(missing * refill_time_seconds))
+                return False, int(current_tokens), wait_seconds
+        except Exception as e:
+            logger.warning(f"Cache error in TokenBucket.consume: {e}")
+            # Fail-open an toàn nếu cache lỗi
+            return True, int(capacity - cost), 0
+
+    @classmethod
+    def reset(cls, key: str) -> None:
+        """Khôi phục bình đầy token (dùng cho test hoặc nạp quota)"""
+        try:
+            cache.delete(f"token_bucket:{key}")
+        except Exception as e:
+            logger.warning(f"Cache error in TokenBucket.reset: {e}")

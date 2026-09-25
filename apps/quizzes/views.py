@@ -16,6 +16,7 @@ from django.template.loader import render_to_string
 
 
 
+from apps.core.security import TokenBucket
 from .models import Quiz, UserQuizAttempt
 from apps.documents.models import Document
 from .services.quiz_service import QuizService 
@@ -36,20 +37,27 @@ def quiz_list_view(request):
 
 @login_required
 def quiz_create_view(request, document_id):
-    """Xử lý form tạo Quiz mới từ Document bằng AI (CHẠY NGẦM)"""
+    """Xử lý form tạo Quiz mới từ Document bằng AI (Bảo vệ bởi TokenBucket Rate Limiter)"""
     document = get_object_or_404(Document, id=document_id, user=request.user)
+    bucket_key = f"user_quiz_{request.user.id}"
     
     if request.method == 'POST':
-       
-        try:
-            r = redis.Redis.from_url(settings.CELERY_BROKER_URL)
-            redis_key = f"spam_lock_quiz_{request.user.id}"
-            if r.exists(redis_key):
-                messages.warning(request, "⚠️ Bạn thao tác quá nhanh! Vui lòng đợi khoảng 30 giây để AI xử lý trước khi tạo thêm đề mới.")
-                return redirect('documents:detail', pk=document_id)
-            r.set(redis_key, 'locked', ex=30)
-        except Exception:
-            pass
+        # 1. Kiểm tra hạn mức tiêu thụ bằng Token Bucket (Tối đa 5 lượt, hồi 1 lượt mỗi 10 phút)
+        is_allowed, remaining, wait_secs = TokenBucket.consume(
+            key=bucket_key,
+            cost=1.0,
+            capacity=5.0,
+            refill_time_seconds=600.0
+        )
+
+        if not is_allowed:
+            wait_mins = max(1, wait_secs // 60)
+            messages.warning(
+                request,
+                f"☕ Bạn đã dùng hết hạn mức ôn tập AI trong giờ này (còn 0/5 lượt). "
+                f"Vui lòng nghỉ ngơi thư giãn khoảng {wait_mins} phút để hệ thống tự động nạp lại năng lượng nhé!"
+            )
+            return redirect('documents:detail', pk=document_id)
 
         try:
             num_questions = int(request.POST.get('num_questions', 5))
@@ -64,9 +72,7 @@ def quiz_create_view(request, document_id):
         if difficulty not in ['easy', 'medium', 'hard', 'basic', 'advanced']:
             difficulty = 'medium'
         
-        
         try:
-            
             generate_quiz_task.delay(
                 document_id=document.id,
                 user_id=request.user.id,
@@ -74,15 +80,27 @@ def quiz_create_view(request, document_id):
                 difficulty=difficulty
             )
             
-            
-            messages.info(request, "Hệ thống đang phân tích. Vui lòng chờ trong dây lát!")
+            messages.info(request, f"🚀 AI đang phân tích tài liệu và tạo {num_questions} câu hỏi. Bạn còn {remaining}/5 lượt ôn tập!")
             return redirect('quizzes:list')
         
         except Exception as e:
             messages.error(request, f"Có lỗi xảy ra khi đưa vào hàng đợi: {str(e)}")
             return redirect('documents:detail', pk=document_id)
 
-    return render(request, 'quizzes/create.html', {'document': document})
+    # GET: Lấy trạng thái hạn mức để hiển thị lên giao diện
+    tokens_available, wait_secs = TokenBucket.get_status(
+        key=bucket_key,
+        capacity=5.0,
+        refill_time_seconds=600.0
+    )
+    wait_minutes = max(1, wait_secs // 60)
+
+    context = {
+        'document': document,
+        'tokens_available': tokens_available,
+        'wait_minutes': wait_minutes
+    }
+    return render(request, 'quizzes/create.html', context)
 
 
 @login_required
