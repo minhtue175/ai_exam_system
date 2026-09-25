@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 from apps.core.models import TimeStampedModel
 
+from django.contrib.postgres.indexes import GinIndex, OpClass
+
 class Quiz(TimeStampedModel):
     """Quiz generated from document"""
     
@@ -41,6 +43,7 @@ class Quiz(TimeStampedModel):
         # THÊM INDEX TẠI ĐÂY
         indexes = [
             models.Index(fields=['user', '-created_at'], name='idx_quiz_user_created'),
+            GinIndex(OpClass('title', name='gin_trgm_ops'), name='idx_quiz_title_trgm'),
         ]
     
     def __str__(self):

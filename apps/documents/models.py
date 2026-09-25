@@ -5,6 +5,8 @@ from django.conf import settings
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
 
+from django.contrib.postgres.indexes import GinIndex, OpClass
+
 class Document(TimeStampedModel):
     """Document model for file storage"""
     
@@ -28,6 +30,7 @@ class Document(TimeStampedModel):
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', 'status']),
+            GinIndex(OpClass('filename', name='gin_trgm_ops'), name='idx_doc_filename_trgm'),
         ]
     
     def __str__(self):
