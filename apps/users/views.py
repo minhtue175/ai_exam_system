@@ -90,15 +90,34 @@ def profile_view(request):
     """User Profile — Xem và chỉnh sửa thông tin cá nhân"""
     from apps.documents.models import Document
     from apps.quizzes.models import UserQuizAttempt
+    from apps.core.cache_utils import CacheManager
     from django.db.models import Avg, Count
 
     user = request.user
 
-    # Stats
-    total_quizzes = UserQuizAttempt.objects.filter(user=user).count()
-    avg_score = UserQuizAttempt.objects.filter(user=user).aggregate(avg=Avg('score'))['avg'] or 0
-    total_documents = Document.objects.filter(user=user).count()
-    recent_attempts = UserQuizAttempt.objects.filter(user=user).select_related('quiz').order_by('-completed_at')[:5]
+    # A2: Cache-Aside Pipeline — Kiểm tra Cache (TTL = 300s / 5 phút)
+    cached_stats = CacheManager.get_profile_stats(user.id)
+    if cached_stats is not None:
+        total_quizzes = cached_stats.get('total_quizzes', 0)
+        avg_score = cached_stats.get('avg_score', 0)
+        total_documents = cached_stats.get('total_documents', 0)
+    else:
+        # Gộp Aggregation: Count và Avg thành 1 query duy nhất, tiết kiệm round-trip DB
+        stats = UserQuizAttempt.objects.filter(user=user).aggregate(
+            total_quizzes=Count('id'),
+            avg_score=Avg('score')
+        )
+        total_quizzes = stats['total_quizzes'] or 0
+        avg_score = stats['avg_score'] or 0
+        total_documents = Document.objects.filter(user=user).count()
+
+        CacheManager.set_profile_stats(user.id, {
+            'total_quizzes': total_quizzes,
+            'avg_score': avg_score,
+            'total_documents': total_documents,
+        })
+
+    recent_attempts = UserQuizAttempt.objects.filter(user=user).select_related('quiz', 'quiz__document').order_by('-completed_at')[:5]
 
     if request.method == 'POST':
         action = request.POST.get('action', 'update_profile')

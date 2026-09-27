@@ -182,11 +182,11 @@
         <h6 class="fw-bold mb-3">Tổng quan học tập</h6>
         <div class="d-flex gap-2">
             <div class="flex-grow-1 card-custom p-3 text-center bg-light border-0" style="border-radius: 12px;">
-                <h3 class="fw-bold text-primary mb-0">{{ recent_attempts.count|default:0 }}</h3>
+                <h3 class="fw-bold text-primary mb-0">{{ total_attempts|default:0 }}</h3>
                 <small class="text-muted" style="font-size: 12px;">Quiz đã làm</small>
             </div>
             <div class="flex-grow-1 card-custom p-3 text-center bg-light border-0" style="border-radius: 12px;">
-                <h3 class="fw-bold text-success mb-0">{{ documents.count|default:0 }}</h3>
+                <h3 class="fw-bold text-success mb-0">{{ total_documents|default:0 }}</h3>
                 <small class="text-muted" style="font-size: 12px;">Tài liệu</small>
             </div>
         </div>

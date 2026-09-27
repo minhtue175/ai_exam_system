@@ -5,6 +5,7 @@ from django.db import connection
 
 from apps.documents.models import Document
 from apps.quizzes.models import UserQuizAttempt, Quiz
+from apps.core.cache_utils import CacheManager
 
 
 def home_view(request):
@@ -18,12 +19,12 @@ def home_view(request):
 def dashboard_view(request):
     """
     Dashboard trung tâm: Tìm kiếm tối ưu với PostgreSQL Trigram & Full-Text Search
-    (GIN Indexing, chống gõ nhầm chính tả và xếp hạng độ liên quan)
+    + Thuật toán Cache-Aside (Lazy Loading) giảm tải DB khi không tìm kiếm
     """
     search_query = request.GET.get('search', '').strip()
 
     documents = Document.objects.filter(user=request.user)
-    recent_attempts = UserQuizAttempt.objects.filter(user=request.user).select_related('quiz')
+    recent_attempts = UserQuizAttempt.objects.filter(user=request.user).select_related('quiz', 'quiz__document')
 
     if search_query:
         if connection.vendor == 'postgresql':
@@ -57,13 +58,31 @@ def dashboard_view(request):
             recent_attempts = recent_attempts.filter(
                 Q(quiz__title__icontains=search_query)
             ).order_by('-completed_at')[:5]
+
+        # Search results: đếm fresh (kết quả phụ thuộc từ khóa tìm kiếm)
+        total_documents = documents.count()
+        total_attempts = recent_attempts.count()
     else:
         documents = documents.order_by('-created_at')
         recent_attempts = recent_attempts.order_by('-completed_at')[:5]
 
+        # Thuật toán Cache-Aside (Lazy Loading): Đọc thống kê từ cache khi không tìm kiếm
+        cached_stats = CacheManager.get_dashboard_stats(request.user.id)
+        if cached_stats is not None:
+            total_documents = cached_stats.get('total_documents', 0)
+            total_attempts = cached_stats.get('total_attempts', 0)
+        else:
+            total_documents = documents.count()
+            total_attempts = UserQuizAttempt.objects.filter(user=request.user).count()
+            CacheManager.set_dashboard_stats(request.user.id, {
+                'total_documents': total_documents,
+                'total_attempts': total_attempts,
+            })
+
     context = {
         'documents': documents,
-        'total_documents': documents.count(),
+        'total_documents': total_documents,
+        'total_attempts': total_attempts,
         'search_query': search_query,
         'recent_attempts': recent_attempts,
     }

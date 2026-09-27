@@ -17,6 +17,7 @@ from django.template.loader import render_to_string
 
 
 from apps.core.security import TokenBucket
+from apps.core.cache_utils import CacheManager
 from .models import Quiz, UserQuizAttempt
 from apps.documents.models import Document
 from .services.quiz_service import QuizService 
@@ -28,9 +29,9 @@ from .tasks import generate_quiz_task
 
 @login_required
 def quiz_list_view(request):
-    """Hiển thị danh sách các bài Quiz đã tạo (Chỉ của user hiện tại)"""
+    """Hiển thị danh sách các bài Quiz đã tạo (Chỉ của user hiện tại, tối ưu chống N+1)"""
     
-    quizzes = Quiz.objects.filter(user=request.user).order_by('-created_at')
+    quizzes = Quiz.objects.filter(user=request.user).select_related('document').order_by('-created_at')
     paginator = Paginator(quizzes, 9)  # 9 per page (3x3 grid)
     page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'quizzes/list.html', {'quizzes': page_obj, 'page_obj': page_obj})
@@ -122,6 +123,8 @@ def quiz_delete_view(request, pk):
 
     if request.method == 'POST':
         quiz.delete()
+        # Invalidate cache sau khi xóa quiz
+        CacheManager.invalidate_user_cache(request.user.id)
         messages.success(request, "Đã xóa bộ đề thành công!")
         return redirect('quizzes:list')
 

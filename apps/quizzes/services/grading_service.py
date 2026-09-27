@@ -77,6 +77,13 @@ class GradingService:
         
         logger.info(f"Quiz attempt saved: User={user.username}, Score={attempt.score}")
         
+        # Invalidate cache sau khi nộp bài thi mới
+        try:
+            from apps.core.cache_utils import CacheManager
+            CacheManager.invalidate_user_cache(user.id)
+        except Exception as e:
+            logger.warning(f"Failed to invalidate cache after attempt: {e}")
+        
         return attempt
     
     @staticmethod

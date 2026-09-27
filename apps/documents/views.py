@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from .models import Document
 from .forms import DocumentUploadForm
 from .services.document_service import DocumentService
+from apps.core.cache_utils import CacheManager
 
 
 @login_required
@@ -27,6 +28,9 @@ def upload_view(request):
                     user=request.user,
                     extract_immediately=True
                 )
+                
+                # Invalidate cache sau khi upload tài liệu mới
+                CacheManager.invalidate_user_cache(request.user.id)
                 
                 messages.success(
                     request, 
@@ -100,6 +104,8 @@ def document_delete_view(request, pk):
         try:
             service = DocumentService()
             service.delete_document(document)
+            # Invalidate cache sau khi xóa tài liệu
+            CacheManager.invalidate_user_cache(request.user.id)
             messages.success(request, f'✅ Đã xóa file "{document.filename}"!')
             return redirect('core:dashboard')
         except Exception as e:
