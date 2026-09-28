@@ -10,8 +10,9 @@ def export_word_view(request, quiz_id):
     # 1. Tìm đề thi - CHỈ cho phép tải đề thuộc sở hữu của người dùng hiện tại (chống IDOR)
     quiz = get_object_or_404(Quiz, id=quiz_id, user=request.user)
     
-    # 2. Hứng các tham số từ URL (VD: ?mode=teacher&shuffle=true)
-    mode = request.GET.get('mode', 'student') # Mặc định là bản sinh viên
+    # 2. Hứng các tham số từ URL với White-list Validation
+    mode_raw = request.GET.get('mode', 'student')
+    mode = 'teacher' if mode_raw == 'teacher' else 'student'
     should_shuffle = request.GET.get('shuffle') == 'true'
     
     # 3. Gọi "Bộ não" để xáo trộn và chuẩn bị dữ liệu
@@ -40,7 +41,8 @@ def export_word_view(request, quiz_id):
 def export_pdf_view(request, quiz_id):
     # 1. Tìm đề thi - CHỈ cho phép tải đề thuộc sở hữu của người dùng hiện tại (chống IDOR)
     quiz = get_object_or_404(Quiz, id=quiz_id, user=request.user)
-    mode = request.GET.get('mode', 'student')
+    mode_raw = request.GET.get('mode', 'student')
+    mode = 'teacher' if mode_raw == 'teacher' else 'student'
     should_shuffle = request.GET.get('shuffle') == 'true'
     
     # Tái sử dụng "Bộ não" xáo đề

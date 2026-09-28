@@ -10,7 +10,9 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
+from django.views.decorators.http import require_POST
+import json
 
 from django.template.loader import render_to_string
 
@@ -69,9 +71,13 @@ def quiz_create_view(request, document_id):
             messages.error(request, "Số câu hỏi không hợp lệ.")
             return redirect('documents:detail', pk=document_id)
 
-        difficulty = request.POST.get('difficulty', 'medium')
-        if difficulty not in ['easy', 'medium', 'hard', 'basic', 'advanced']:
-            difficulty = 'medium'
+        difficulty = request.POST.get('difficulty', 'remember')
+        valid_difficulties = [
+            'remember', 'understand', 'apply', 'analyze', 'evaluate', 'create',
+            'basic', 'advanced'
+        ]
+        if difficulty not in valid_difficulties:
+            difficulty = 'remember'
         
         try:
             generate_quiz_task.delay(
@@ -224,3 +230,121 @@ def export_pdf_view(request, attempt_id):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     
     return response
+
+
+# =====================================================================
+# B1: THUẬT TOÁN SPACED REPETITION (HỆ THỐNG HỘP LEITNER)
+# =====================================================================
+
+@login_required
+def spaced_repetition_view(request):
+    """
+    Dashboard Spaced Repetition (Hệ thống hộp Leitner Đa Chế Độ):
+    - Chế độ Ngắn Hạn: Ôn thi cấp tốc < 1 tuần (tính bằng Giờ: 1h -> 6h -> 1 ngày -> 3 ngày -> 6 ngày)
+    - Chế độ Dài Hạn: Học ngoại ngữ/chứng chỉ 1 tuần -> 1 tháng (1 ngày -> 3 ngày -> 7 ngày -> 14 ngày -> 30 ngày)
+    """
+    from .services.leitner_service import LeitnerService
+    
+    # Lấy chế độ từ query parameter hoặc session (mặc định ngắn hạn cho ôn thi)
+    mode = request.GET.get('mode') or request.session.get('leitner_mode', 'short_term')
+    if mode not in ['short_term', 'long_term']:
+        mode = 'short_term'
+    request.session['leitner_mode'] = mode
+
+    stats = LeitnerService.get_dashboard_stats(request.user, mode=mode)
+    due_cards = LeitnerService.get_due_cards(request.user, mode=mode, limit=10)
+
+    context = {
+        'stats': stats,
+        'due_cards': due_cards,
+        'current_mode': mode,
+    }
+    return render(request, 'quizzes/spaced_repetition.html', context)
+
+
+@login_required
+@require_POST
+def switch_review_mode_view(request):
+    """
+    API endpoint chuyển đổi chế độ ôn tập (Ngắn hạn / Dài hạn):
+    Cập nhật chế độ cho toàn bộ thẻ ôn tập hiện có của user và tính lại thời gian ôn tập.
+    """
+    from .services.leitner_service import LeitnerService
+    try:
+        data = json.loads(request.body)
+        new_mode = data.get('mode', 'short_term')
+        if new_mode not in ['short_term', 'long_term']:
+            return JsonResponse({'success': False, 'error': 'Chế độ không hợp lệ!'}, status=400)
+            
+        custom_first_hours = int(data.get('custom_first_hours', 1))
+        if custom_first_hours not in [1, 2, 4, 6, 12, 24]:
+            custom_first_hours = 1
+
+        request.session['leitner_mode'] = new_mode
+        updated_count = LeitnerService.switch_user_mode(
+            request.user,
+            new_mode=new_mode,
+            custom_first_hours=custom_first_hours
+        )
+
+        return JsonResponse({
+            'success': True,
+            'mode': new_mode,
+            'updated_count': updated_count,
+            'message': f"Đã chuyển sang chế độ {'Ngắn Hạn (< 1 tuần)' if new_mode == 'short_term' else 'Dài Hạn (1 tuần - 1 tháng)'} thành công!"
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def review_session_view(request):
+    """
+    Phiên ôn tập tương tác cho các câu hỏi đến hạn (Due Review Cards):
+    Cho phép người dùng kiểm tra lại từng câu, chấm điểm tức thì và điều chỉnh hộp Leitner.
+    """
+    from .services.leitner_service import LeitnerService
+    mode = request.GET.get('mode') or request.session.get('leitner_mode', 'short_term')
+    if mode not in ['short_term', 'long_term']:
+        mode = 'short_term'
+
+    due_cards = LeitnerService.get_due_cards(request.user, mode=mode, limit=30)
+    
+    cards_data = []
+    for c in due_cards:
+        cards_data.append({
+            'card_id': c.id,
+            'question_text': c.question.question_text,
+            'options': c.question.options,
+            'box_level': c.box_level,
+            'review_mode': c.review_mode,
+            'interval_display': c.get_interval_display(),
+            'quiz_title': c.question.quiz.title,
+        })
+    
+    context = {
+        'cards_count': len(due_cards),
+        'cards_data': cards_data,
+        'cards_json': json.dumps(cards_data),
+        'current_mode': mode,
+    }
+    return render(request, 'quizzes/review_session.html', context)
+
+
+@login_required
+@require_POST
+def review_submit_answer(request):
+    """
+    API endpoint xử lý câu trả lời của 1 thẻ ôn tập:
+    Cập nhật level hộp Leitner (tăng lên hoặc rớt về hộp 1).
+    """
+    from .services.leitner_service import LeitnerService
+    try:
+        data = json.loads(request.body)
+        card_id = int(data.get('card_id'))
+        selected_index = int(data.get('selected_index'))
+        
+        result = LeitnerService.answer_card(request.user, card_id, selected_index)
+        return JsonResponse({'success': True, 'result': result})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)

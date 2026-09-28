@@ -8,40 +8,29 @@ from weasyprint import HTML
 
 def prepare_quiz_data(quiz, should_shuffle=False):
     """
-    Hàm chuẩn bị dữ liệu đề thi siêu tốc độ.
-    - Ép Database trả về Dict (không dùng Object).
-    - Fix triệt để bug xáo trộn đáp án trùng lặp.
+    Hàm chuẩn bị dữ liệu đề thi phục vụ Export:
+    - Nếu should_shuffle=True: Tích hợp Thuật toán Trộn Đề Có Ràng Buộc (Constrained Shuffling)
+      bằng QuestionShuffler, bảo đảm phân bố đều A, B, C, D và chống dồn chuỗi đáp án.
+    - Ép Database trả về Dict để tối ưu hiệu năng.
     """
-
     questions_raw = list(quiz.questions.values(
         'id', 'question_text', 'options', 'correct_answer', 'explanation'
     ))
-    
-    rng = random.Random()
 
-    if should_shuffle:
-        rng.shuffle(questions_raw)
+    if should_shuffle and questions_raw:
+        from apps.quizzes.services.shuffler import QuestionShuffler
+        shuffled_questions = QuestionShuffler.shuffle_quiz(questions_raw)
+    else:
+        shuffled_questions = questions_raw
 
     prepared_data = []
-    
-    
-    for q in questions_raw:
-        options = list(q['options']) 
-        correct_index = q['correct_answer']
-        
-        if should_shuffle:
-            indices = list(range(len(options))) 
-            rng.shuffle(indices) 
-            
-            options = [options[i] for i in indices]
-            correct_index = indices.index(correct_index)
-            
+    for q in shuffled_questions:
         prepared_data.append({
             'id': q['id'],
             'question_text': q['question_text'],
-            'options': options,
-            'correct_index': correct_index,
-            'explanation': q['explanation'] or 'Không có giải thích',
+            'options': q['options'],
+            'correct_index': q['correct_answer'],
+            'explanation': q.get('explanation') or 'Không có giải thích',
         })
 
     return prepared_data

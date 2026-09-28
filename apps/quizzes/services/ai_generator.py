@@ -31,12 +31,54 @@ class GeminiQuizGenerator:
         'gemini-3.5-flash-lite',
     ]
 
+    BLOOM_TAXONOMY_GUIDES = {
+        'remember': (
+            "CẤP ĐỘ 1: NHỚ (REMEMBER) — Nhắc lại kiến thức\n"
+            "- Trọng tâm: Hỏi về định nghĩa, thuật ngữ, sự kiện cụ thể, liệt kê các đặc điểm.\n"
+            "- Cụm từ gợi ý ra đề: 'Định nghĩa nào sau đây...', 'Đặc điểm nào dưới đây...', 'Liệt kê các...', 'Thuật ngữ nào chỉ...'"
+        ),
+        'understand': (
+            "CẤP ĐỘ 2: HIỂU (UNDERSTAND) — Giải thích ý nghĩa & bản chất\n"
+            "- Trọng tâm: Diễn giải khái niệm, so sánh sự tương đồng/khác biệt, giải thích lý do.\n"
+            "- Cụm từ gợi ý ra đề: 'Ý nghĩa của...', 'Tại sao lại...', 'So sánh giữa X và Y...', 'Khái niệm nào mô tả đúng nhất...'"
+        ),
+        'apply': (
+            "CẤP ĐỘ 3: ÁP DỤNG (APPLY) — Vận dụng kiến thức vào thực tế\n"
+            "- Trọng tâm: Đưa vào bài toán hoặc tình huống giả định thực tế để người học áp dụng quy tắc/quy trình.\n"
+            "- Cụm từ gợi ý ra đề: 'Trong tình huống X, cách xử lý nào là...', 'Tính toán...', 'Vận dụng nguyên lý để...'"
+        ),
+        'analyze': (
+            "CẤP ĐỘ 4: PHÂN TÍCH (ANALYZE) — Chia nhỏ vấn đề & mối quan hệ\n"
+            "- Trọng tâm: Phân tích nguyên nhân - kết quả, nhận diện cấu trúc, phát hiện lỗi sai hoặc quan hệ tương tác.\n"
+            "- Cụm từ gợi ý ra đề: 'Nguyên nhân cốt lõi gây ra...', 'Phân tích điểm mấu chốt...', 'Yếu tố nào quyết định...'"
+        ),
+        'evaluate': (
+            "CẤP ĐỘ 5: ĐÁNH GIÁ (EVALUATE) — Nhận xét, phán đoán & tiêu chí\n"
+            "- Trọng tâm: Đánh giá tính hợp lý, so sánh ưu/nhược điểm, nhận định giải pháp tối ưu theo tiêu chí cụ thể.\n"
+            "- Cụm từ gợi ý ra đề: 'Nhận định nào là xác đáng nhất...', 'Phương án nào tối ưu nhất và vì sao...', 'Hạn chế lớn nhất...'"
+        ),
+        'create': (
+            "CẤP ĐỘ 6: SÁNG TẠO (CREATE) — Tổng hợp & đề xuất giải pháp mới\n"
+            "- Trọng tâm: Thiết kế quy trình, đề xuất giải pháp cải tiến, tổng hợp các yếu tố tạo mô hình mới.\n"
+            "- Cụm từ gợi ý ra đề: 'Để giải quyết vấn đề X, giải pháp nào cải tiến nhất...', 'Đề xuất phương án thiết kế...'"
+        ),
+        'basic': (
+            "CẤP ĐỘ CƠ BẢN: Kết hợp Cấp 1 (Nhớ) và Cấp 2 (Hiểu). Đi thẳng vào định nghĩa và cơ chế căn bản."
+        ),
+        'advanced': (
+            "CẤP ĐỘ NÂNG CAO: Kết hợp Cấp 3 (Áp dụng) và Cấp 4 (Phân tích). Tư duy tình huống và phân tích sâu."
+        ),
+    }
+
     QUIZ_PROMPT_TEMPLATE = """
 Bạn là một giảng viên đại học kỳ cựu đang biên soạn đề thi trắc nghiệm. 
 Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm. Tuyệt đối KHÔNG sử dụng các cụm từ sáo rỗng, khuôn mẫu mang "mùi AI".
 
 **NHIỆM VỤ:**
-Đọc kỹ phân đoạn văn bản dưới đây và tạo ra chính xác {num_questions} câu hỏi trắc nghiệm chất lượng cao. Độ khó yêu cầu: {difficulty}.
+Đọc kỹ phân đoạn văn bản dưới đây và tạo ra chính xác {num_questions} câu hỏi trắc nghiệm chất lượng cao.
+
+**CHUẨN MỰC TƯ DUY (BLOOM'S TAXONOMY):**
+{difficulty_guidance}
 
 **Ý TƯỞNG CỐT LÕI CỦA TOÀN BỘ TÀI LIỆU (THAM KHẢO TỔNG QUAN):**
 {key_concepts}
@@ -137,14 +179,18 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         """Worker tạo 1 batch câu hỏi từ 1 phân đoạn văn bản"""
         # Thêm 1 câu dự phòng để phòng trường hợp bị trùng lặp hoặc validate hỏng
         request_count = batch_count + 1
+        bloom_guide = self.BLOOM_TAXONOMY_GUIDES.get(
+            difficulty.lower(),
+            self.BLOOM_TAXONOMY_GUIDES.get('basic')
+        )
         prompt = self.QUIZ_PROMPT_TEMPLATE.format(
             num_questions=request_count,
-            difficulty=difficulty,
+            difficulty_guidance=bloom_guide,
             key_concepts=key_concepts or "Tập trung vào các thuật ngữ và định nghĩa chính trong phân đoạn.",
             text_content=chunk_text
         )
 
-        logger.info(f"[Batch {batch_idx + 1}] Bắt đầu tạo {request_count} câu hỏi...")
+        logger.info(f"[Batch {batch_idx + 1}] Bắt đầu tạo {request_count} câu hỏi với Bloom level: {difficulty}...")
         response_text = self._call_gemini_with_fallback(prompt)
         questions = self._parse_response(response_text)
         validated = self._validate_questions(questions)
@@ -155,10 +201,11 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         self,
         text_content: str,
         num_questions: int = 10,
-        difficulty: str = "medium"
+        difficulty: str = "remember"
     ) -> List[Dict]:
         """
         Hàm chính sinh câu hỏi trắc nghiệm:
+        - Phân loại cấp độ tư duy Bloom's Taxonomy (remember, understand, apply, analyze, evaluate, create)
         - TextRank trích xuất ý chính toàn văn
         - SemanticChunker phân đoạn tài liệu
         - ThreadPoolExecutor chạy song song các batch
@@ -172,8 +219,12 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         if num_questions < 1 or num_questions > 40:
             raise ValueError("Số câu hỏi phải từ 1 đến 40")
 
-        if difficulty not in ['easy', 'medium', 'hard', 'basic', 'advanced']:
-            difficulty = 'medium'
+        valid_difficulties = [
+            'remember', 'understand', 'apply', 'analyze', 'evaluate', 'create',
+            'basic', 'advanced', 'easy', 'medium', 'hard'
+        ]
+        if difficulty not in valid_difficulties:
+            difficulty = 'remember'
 
         # 1. Thuật toán TextRank: Trích xuất các câu cốt lõi của toàn văn
         logger.info("Đang chạy thuật toán TextRank để trích xuất ý tưởng cốt lõi...")

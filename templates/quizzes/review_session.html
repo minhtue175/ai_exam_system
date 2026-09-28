@@ -1,0 +1,345 @@
+{% extends 'base.html' %}
+
+{% block title %}Phiên Ôn Tập Leitner | Fluesy Exam{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 mt-2" style="max-width: 850px; margin: 0 auto;">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none" style="color: var(--primary-color);">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'quizzes:spaced_repetition' %}" class="text-decoration-none" style="color: var(--primary-color);">Ôn Tập Leitner</a></li>
+            <li class="breadcrumb-item active fw-bold">Phiên Ôn Tập</li>
+        </ol>
+    </nav>
+
+    {% if cards_count == 0 %}
+    <!-- Empty State -->
+    <div class="card-custom p-5 text-center shadow-sm">
+        <i class="bi bi-patch-check-fill text-success" style="font-size: 80px;"></i>
+        <h3 class="fw-bold mt-4 mb-2">Bạn Đã Hoàn Thành Hết Mục Tiêu Hôm Nay!</h3>
+        <p class="text-muted fs-6 mb-4">
+            Không còn câu hỏi nào cần ôn tập trong thời điểm hiện tại. Hãy quay lại vào ngày mai hoặc tiếp tục luyện đề mới nhé.
+        </p>
+        <div>
+            <a href="{% url 'quizzes:spaced_repetition' %}" class="btn btn-outline-primary rounded-pill px-4 py-2 me-2">
+                <i class="bi bi-boxes me-1"></i> Xem 5 Ngăn Leitner
+            </a>
+            <a href="{% url 'quizzes:list' %}" class="btn text-white rounded-pill px-4 py-2 fw-bold" style="background: var(--fluesy-grad);">
+                <i class="bi bi-journal-check me-1"></i> Danh Sách Bài Thi
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Active Review Session Interface -->
+    <div id="sessionWrapper">
+        <!-- Progress Bar & Header -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <span class="text-muted fw-semibold">Tiến độ phiên ôn tập:</span>
+                <span class="fw-bold text-primary fs-5 ms-1" id="progressIndicator">1 / {{ cards_count }}</span>
+            </div>
+            <div id="boxBadge">
+                <!-- Dynamic Box Badge -->
+            </div>
+        </div>
+
+        <div class="progress mb-4" style="height: 8px; border-radius: 10px; background-color: #e9ecef;">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" id="sessionProgressBar" style="width: 0%; background: var(--fluesy-grad);"></div>
+        </div>
+
+        <!-- Question Card -->
+        <div class="card-custom p-4 p-md-5 shadow-sm border-0 mb-4 position-relative" id="questionCard">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="badge bg-light text-muted border px-3 py-2 rounded-pill" id="quizSource">
+                    Bộ đề gốc
+                </span>
+                <small class="text-muted"><i class="bi bi-clock-history me-1"></i> Chu kỳ Spaced Repetition</small>
+            </div>
+
+            <h4 class="fw-bold text-dark mb-4 lh-base" id="questionTitle" style="font-size: 1.25rem;">
+                <!-- Question text here -->
+            </h4>
+
+            <!-- Options Grid -->
+            <div class="d-flex flex-column gap-3 mb-4" id="optionsContainer">
+                <!-- Options rendered here -->
+            </div>
+
+            <!-- Feedback Alert (Initially Hidden) -->
+            <div id="feedbackAlert" class="p-4 rounded-3 d-none mb-3">
+                <div class="d-flex align-items-center gap-3 mb-2">
+                    <i id="feedbackIcon" class="fs-2"></i>
+                    <div>
+                        <h5 class="fw-bold mb-0" id="feedbackTitle"></h5>
+                        <small class="d-block" id="feedbackLeitnerAction"></small>
+                    </div>
+                </div>
+                <div class="mt-2 pt-2 border-top border-opacity-25" id="feedbackExplanationWrapper">
+                    <small class="fw-bold d-block mb-1">💡 Giải thích chi tiết:</small>
+                    <small id="feedbackExplanationText" class="lh-sm"></small>
+                </div>
+            </div>
+
+            <!-- Next Button (Initially Hidden) -->
+            <div class="text-end d-none" id="nextActionWrapper">
+                <button type="button" class="btn text-white rounded-pill px-5 py-3 fw-bold fs-6 shadow-sm" id="nextBtn" style="background: var(--fluesy-grad);">
+                    Câu tiếp theo <i class="bi bi-arrow-right-short fs-5 ms-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completion Screen (Initially Hidden) -->
+    <div id="completionScreen" class="card-custom p-5 text-center shadow-sm d-none">
+        <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-4" style="width: 90px; height: 90px; background: rgba(25, 135, 84, 0.1); color: #198754;">
+            <i class="bi bi-trophy-fill fs-1"></i>
+        </div>
+        <h2 class="fw-bold mb-2">Hoàn Thành Xuất Sắc Phiên Ôn Tập!</h2>
+        <p class="text-muted fs-6 mb-4">
+            Bạn đã ôn tập xong toàn bộ <strong>{{ cards_count }} câu hỏi</strong> đến hạn hôm nay.<br>
+            Các câu hỏi đã được tự động điều chỉnh theo các ngăn Leitner khoa học.
+        </p>
+
+        <div class="row g-3 justify-content-center mb-4" style="max-width: 450px; margin: 0 auto;">
+            <div class="col-6">
+                <div class="p-3 bg-light rounded-3 text-center border">
+                    <h3 class="fw-bold text-success mb-0" id="sessionCorrectCount">0</h3>
+                    <small class="text-muted">Đúng (Thăng ngăn)</small>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="p-3 bg-light rounded-3 text-center border">
+                    <h3 class="fw-bold text-danger mb-0" id="sessionWrongCount">0</h3>
+                    <small class="text-muted">Sai (Về ngăn 1)</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{% url 'quizzes:spaced_repetition' %}" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold">
+                <i class="bi bi-boxes me-1"></i> Về 5 Ngăn Leitner
+            </a>
+            <a href="{% url 'core:dashboard' %}" class="btn text-white rounded-pill px-4 py-2 fw-bold" style="background: var(--fluesy-grad);">
+                <i class="bi bi-house-door me-1"></i> Về Dashboard
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.option-btn {
+    border: 2px solid #e9ecef;
+    border-radius: 14px;
+    padding: 16px 20px;
+    text-align: left;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.option-btn:hover:not(:disabled) {
+    border-color: var(--primary-color);
+    background-color: #faf8ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(106, 53, 255, 0.08);
+}
+
+.option-btn .opt-badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f5;
+    font-weight: bold;
+    color: #495057;
+    flex-shrink: 0;
+}
+
+.option-btn.selected-correct {
+    border-color: #198754 !important;
+    background-color: #f0fff4 !important;
+    color: #198754 !important;
+}
+
+.option-btn.selected-correct .opt-badge {
+    background: #198754 !important;
+    color: #fff !important;
+}
+
+.option-btn.selected-wrong {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5 !important;
+    color: #dc3545 !important;
+}
+
+.option-btn.selected-wrong .opt-badge {
+    background: #dc3545 !important;
+    color: #fff !important;
+}
+</style>
+
+<script>
+const cardsData = {{ cards_json|safe }};
+let currentIndex = 0;
+let correctCount = 0;
+let wrongCount = 0;
+let isAnswered = false;
+
+const letterLabels = ['A', 'B', 'C', 'D'];
+
+function getBoxBadgeHTML(card) {
+    const lvl = card.box_level;
+    const intervalStr = card.interval_display || (card.review_mode === 'short_term' ? 'vài giờ' : 'vài ngày');
+    const colorClass = {
+        1: 'bg-danger-subtle text-danger',
+        2: 'bg-warning-subtle text-warning',
+        3: 'bg-primary-subtle text-primary',
+        4: 'bg-info-subtle text-info',
+        5: 'bg-success-subtle text-success',
+    }[lvl] || 'bg-secondary-subtle text-secondary';
+    
+    return `<span class="badge ${colorClass} px-3 py-2 rounded-pill fw-bold">Ngăn ${lvl} (Ôn sau ${intervalStr})</span>`;
+}
+
+function renderCard(index) {
+    if (index >= cardsData.length) {
+        showCompletionScreen();
+        return;
+    }
+
+    isAnswered = false;
+    const card = cardsData[index];
+
+    // Cập nhật Header & Progress
+    document.getElementById('progressIndicator').innerText = `${index + 1} / ${cardsData.length}`;
+    const pct = ((index) / cardsData.length) * 100;
+    document.getElementById('sessionProgressBar').style.width = `${pct}%`;
+
+    document.getElementById('boxBadge').innerHTML = getBoxBadgeHTML(card);
+    document.getElementById('quizSource').innerText = card.quiz_title;
+    document.getElementById('questionTitle').innerText = card.question_text;
+
+    // Ẩn feedback & nút tiếp theo
+    document.getElementById('feedbackAlert').className = 'p-4 rounded-3 d-none mb-3';
+    document.getElementById('nextActionWrapper').classList.add('d-none');
+
+    // Render 4 options
+    const container = document.getElementById('optionsContainer');
+    container.innerHTML = '';
+
+    card.options.forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'option-btn w-100';
+        btn.innerHTML = `<span class="opt-badge">${letterLabels[optIdx]}</span><span>${optText}</span>`;
+        btn.onclick = () => handleSelectAnswer(optIdx, btn);
+        container.appendChild(btn);
+    });
+}
+
+async function handleSelectAnswer(selectedIndex, buttonElement) {
+    if (isAnswered) return;
+    isAnswered = true;
+
+    // Vô hiệu hóa toàn bộ buttons
+    const allButtons = document.querySelectorAll('.option-btn');
+    allButtons.forEach(btn => btn.disabled = true);
+
+    const currentCard = cardsData[currentIndex];
+
+    try {
+        const response = await fetch("{% url 'quizzes:review_submit_answer' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                card_id: currentCard.card_id,
+                selected_index: selectedIndex
+            })
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            const res = data.result;
+            const isCorrect = res.is_correct;
+
+            // Highlight đáp án
+            if (isCorrect) {
+                correctCount++;
+                buttonElement.classList.add('selected-correct');
+            } else {
+                wrongCount++;
+                buttonElement.classList.add('selected-wrong');
+                // Highlight đáp án đúng
+                if (allButtons[res.correct_answer_index]) {
+                    allButtons[res.correct_answer_index].classList.add('selected-correct');
+                }
+            }
+
+            // Hiển thị Feedback Alert
+            const feedbackAlert = document.getElementById('feedbackAlert');
+            const feedbackIcon = document.getElementById('feedbackIcon');
+            const feedbackTitle = document.getElementById('feedbackTitle');
+            const feedbackLeitner = document.getElementById('feedbackLeitnerAction');
+            const feedbackExp = document.getElementById('feedbackExplanationText');
+
+            if (isCorrect) {
+                feedbackAlert.className = 'p-4 rounded-3 mb-3 bg-success-subtle text-success border border-success';
+                feedbackIcon.className = 'bi bi-check-circle-fill text-success fs-1';
+                feedbackTitle.innerText = 'Chính xác! Xuất sắc!';
+                if (res.is_mastered) {
+                    feedbackLeitner.innerText = `🎉 Câu hỏi đã đạt NGĂN 5 (Thành thạo) — Ôn lại sau ${res.interval_display}!`;
+                } else {
+                    feedbackLeitner.innerText = `🚀 Thăng cấp: Ngăn ${res.old_box} ➔ Ngăn ${res.new_box} (Ôn lại sau ${res.interval_display})!`;
+                }
+            } else {
+                feedbackAlert.className = 'p-4 rounded-3 mb-3 bg-danger-subtle text-danger border border-danger';
+                feedbackIcon.className = 'bi bi-x-circle-fill text-danger fs-1';
+                feedbackTitle.innerText = 'Chưa chính xác!';
+                feedbackLeitner.innerText = `⚠️ Câu hỏi chuyển về Ngăn 1 (Ôn lại sau ${res.interval_display}) để củng cố trí nhớ.`;
+            }
+
+            feedbackExp.innerText = res.explanation;
+            feedbackAlert.classList.remove('d-none');
+
+            // Hiển thị nút tiếp theo
+            document.getElementById('nextActionWrapper').classList.remove('d-none');
+        } else {
+            alert('Có lỗi xảy ra: ' + data.error);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Lỗi kết nối máy chủ!');
+    }
+}
+
+document.getElementById('nextBtn')?.addEventListener('click', () => {
+    currentIndex++;
+    renderCard(currentIndex);
+});
+
+function showCompletionScreen() {
+    document.getElementById('sessionWrapper').classList.add('d-none');
+    document.getElementById('completionScreen').classList.remove('d-none');
+    document.getElementById('sessionCorrectCount').innerText = correctCount;
+    document.getElementById('sessionWrongCount').innerText = wrongCount;
+}
+
+// Khởi tạo hiển thị câu đầu tiên
+if (cardsData && cardsData.length > 0) {
+    renderCard(0);
+}
+</script>
+{% endblock %}

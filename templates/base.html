@@ -180,8 +180,13 @@
                 </a>
             </li>
             <li>
-                <a href="{% url 'quizzes:list' %}" class="nav-item-custom {% if 'quizzes' in request.path %}active{% endif %}">
+                <a href="{% url 'quizzes:list' %}" class="nav-item-custom {% if 'quizzes' in request.path and 'spaced-repetition' not in request.path %}active{% endif %}">
                     <i class="bi bi-journal-check"></i> List Quizzes
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'quizzes:spaced_repetition' %}" class="nav-item-custom {% if 'spaced-repetition' in request.path %}active{% endif %}">
+                    <i class="bi bi-repeat"></i> Ôn Tập Lặp Lại
                 </a>
             </li>
             <li>

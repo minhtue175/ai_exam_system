@@ -1,0 +1,339 @@
+{% extends 'base.html' %}
+
+{% block title %}Hệ Thống Ôn Tập Lặp Lại (Leitner) | Fluesy Exam{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0 mt-2">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none" style="color: var(--primary-color);">Dashboard</a></li>
+            <li class="breadcrumb-item active fw-bold">Ôn Tập Lặp Lại (Leitner System)</li>
+        </ol>
+    </nav>
+
+    <!-- Header Banner -->
+    <div class="card-custom mb-4 p-5 text-white position-relative overflow-hidden" style="background: linear-gradient(135deg, #1E3B70 0%, #29539B 50%, #6a35ff 100%);">
+        <i class="bi bi-repeat position-absolute text-white opacity-10" style="font-size: 200px; top: -50px; right: 20px;"></i>
+        <div class="position-relative z-1">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge bg-white text-dark px-3 py-2 rounded-pill fw-bold">
+                    <i class="bi bi-brain text-primary me-1"></i> SPATLED REPETITION & LEITNER BOXES
+                </span>
+                {% if current_mode == 'short_term' %}
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold shadow-sm">
+                        <i class="bi bi-lightning-charge-fill me-1"></i> Chế độ Ngắn Hạn (< 1 tuần, theo giờ)
+                    </span>
+                {% else %}
+                    <span class="badge bg-info text-white px-3 py-2 rounded-pill fw-bold shadow-sm">
+                        <i class="bi bi-book-half me-1"></i> Chế độ Dài Hạn (1 tuần — 1 tháng)
+                    </span>
+                {% endif %}
+            </div>
+
+            <h2 class="fw-bold mb-3 display-6">Hệ Thống Ôn Tập Lặp Lại Khoa Học</h2>
+            <p class="fs-6 opacity-75 mb-4" style="max-width: 680px;">
+                Tự động gom các câu hỏi bạn từng làm sai vào 5 ngăn ghi nhớ Ebbinghaus.
+                Hỗ trợ 2 chế độ: <strong>Ngắn hạn (< 1 tuần)</strong> cho các kỳ thi cận kề và <strong>Dài hạn (1 tuần — 1 tháng)</strong> cho học ngoại ngữ & kiến thức dài hạn.
+            </p>
+            {% if stats.due_cards_count > 0 %}
+                <a href="{% url 'quizzes:review_session' %}?mode={{ current_mode }}" class="btn btn-light text-primary rounded-pill px-5 py-3 fw-bold fs-5 shadow-lg d-inline-flex align-items-center gap-2">
+                    <i class="bi bi-play-circle-fill fs-4"></i> Ôn Tập Ngay ({{ stats.due_cards_count }} câu đến hạn)
+                </a>
+            {% else %}
+                <button class="btn btn-outline-light rounded-pill px-4 py-2 fw-bold" disabled>
+                    <i class="bi bi-check2-all me-1"></i> Không có câu hỏi nào đến hạn ở chế độ này!
+                </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Mode Selector Card (Ngắn hạn vs Dài hạn) -->
+    <div class="card-custom p-4 mb-5 border-0 shadow-sm bg-white">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+            <div>
+                <h5 class="fw-bold text-dark mb-1"><i class="bi bi-sliders me-2 text-primary"></i>Chọn Chế Độ Ôn Tập Phù Hợp</h5>
+                <small class="text-muted">Lựa chọn chu kỳ lặp lại tùy theo mục tiêu thi cử ngắn hạn hay học ngoại ngữ dài hạn</small>
+            </div>
+            <div class="btn-group p-1 bg-light rounded-pill shadow-sm border" role="group">
+                <button type="button" class="btn rounded-pill px-4 py-2 fw-bold {% if current_mode == 'short_term' %}btn-primary text-white shadow-sm{% else %}btn-light text-secondary border-0{% endif %}" onclick="selectMode('short_term')">
+                    <i class="bi bi-lightning-charge me-1"></i> Ngắn Hạn (< 1 tuần)
+                </button>
+                <button type="button" class="btn rounded-pill px-4 py-2 fw-bold {% if current_mode == 'long_term' %}btn-primary text-white shadow-sm{% else %}btn-light text-secondary border-0{% endif %}" onclick="triggerLongTermMode()">
+                    <i class="bi bi-calendar-range me-1"></i> Dài Hạn (1 tuần — 1 tháng)
+                </button>
+            </div>
+        </div>
+
+        {% if current_mode == 'short_term' %}
+        <!-- Short-Term Config Bar -->
+        <div class="p-3 rounded-3 bg-light border d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-warning-subtle text-warning border px-3 py-2 rounded-pill fw-bold">
+                    🚀 Ôn thi cấp tốc
+                </span>
+                <span class="text-secondary fs-6">
+                    Chu kỳ: <strong>{{ stats.box_intervals.1 }}</strong> ➔ <strong>6 giờ</strong> ➔ <strong>1 ngày</strong> ➔ <strong>3 ngày</strong> ➔ <strong>6 ngày</strong> (Hoàn thành trước kỳ thi).
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <small class="text-muted fw-bold">Ôn lại Ngăn 1 sau:</small>
+                <select class="form-select form-select-sm rounded-pill fw-bold text-primary" style="width: 130px;" id="customFirstHoursSelect" onchange="changeFirstIntervalHours(this.value)">
+                    <option value="1" {% if stats.custom_first_hours == 1 %}selected{% endif %}>1 giờ</option>
+                    <option value="2" {% if stats.custom_first_hours == 2 %}selected{% endif %}>2 giờ</option>
+                    <option value="4" {% if stats.custom_first_hours == 4 %}selected{% endif %}>4 giờ</option>
+                    <option value="6" {% if stats.custom_first_hours == 6 %}selected{% endif %}>6 giờ</option>
+                    <option value="12" {% if stats.custom_first_hours == 12 %}selected{% endif %}>12 giờ</option>
+                </select>
+            </div>
+        </div>
+        {% else %}
+        <!-- Long-Term Notice -->
+        <div class="alert alert-info border-0 p-3 mb-0 rounded-3 d-flex align-items-center gap-3" style="background: rgba(13, 202, 240, 0.1);">
+            <i class="bi bi-info-circle-fill text-info fs-3"></i>
+            <div>
+                <strong class="d-block text-dark">Chế độ Dài Hạn đang hoạt động</strong>
+                <small class="text-secondary">
+                    Chu kỳ: <strong>1 ngày</strong> ➔ <strong>3 ngày</strong> ➔ <strong>7 ngày (1 tuần)</strong> ➔ <strong>14 ngày (2 tuần)</strong> ➔ <strong>30 ngày (1 tháng)</strong>.
+                    Thích hợp cho học từ vựng ngoại ngữ và ghi nhớ bền vững lâu năm.
+                </small>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Stats Overview -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card-custom p-4 text-center h-100 border-0 bg-white shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px; background: rgba(106, 53, 255, 0.1); color: var(--primary-color);">
+                    <i class="bi bi-collection fs-3"></i>
+                </div>
+                <h2 class="fw-bold mb-1 text-dark">{{ stats.total_cards }}</h2>
+                <span class="text-muted fw-semibold">Tổng câu trong chế độ {{ current_mode|yesno:"ngắn hạn,dài hạn" }}</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-custom p-4 text-center h-100 border-0 bg-white shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px; background: rgba(220, 53, 69, 0.1); color: #dc3545;">
+                    <i class="bi bi-alarm fs-3"></i>
+                </div>
+                <h2 class="fw-bold mb-1 text-danger">{{ stats.due_cards_count }}</h2>
+                <span class="text-muted fw-semibold">Câu đến hạn cần ôn ngay</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card-custom p-4 text-center h-100 border-0 bg-white shadow-sm">
+                <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 56px; height: 56px; background: rgba(25, 135, 84, 0.1); color: #198754;">
+                    <i class="bi bi-check-circle-fill fs-3"></i>
+                </div>
+                <h2 class="fw-bold mb-1 text-success">{{ stats.mastered_count }}</h2>
+                <span class="text-muted fw-semibold">Đã thành thạo (Ngăn 5) — {{ stats.mastery_rate }}%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5 Leitner Boxes Visual Flow with Dynamic Intervals -->
+    <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-boxes me-2 text-primary"></i>5 Ngăn Ghi Nhớ (Lịch Trình Chi Tiết)</h4>
+    <div class="row row-cols-1 row-cols-md-5 g-3 mb-5">
+        <!-- Box 1 -->
+        <div class="col">
+            <div class="card-custom p-4 h-100 border-top border-4 border-danger shadow-sm text-center">
+                <span class="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill mb-2 fw-bold">Ngăn 1</span>
+                <h4 class="fw-bold mb-1">{{ stats.box_counts.1 }} câu</h4>
+                <small class="text-muted d-block mb-3">Ôn lại: <strong class="text-danger">{{ stats.box_intervals.1 }}</strong></small>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-danger" style="width: 20%;"></div>
+                </div>
+                <small class="text-secondary" style="font-size: 11.5px;">{{ stats.box_descriptions.1 }}</small>
+            </div>
+        </div>
+        <!-- Box 2 -->
+        <div class="col">
+            <div class="card-custom p-4 h-100 border-top border-4 border-warning shadow-sm text-center">
+                <span class="badge bg-warning-subtle text-warning px-3 py-1 rounded-pill mb-2 fw-bold">Ngăn 2</span>
+                <h4 class="fw-bold mb-1">{{ stats.box_counts.2 }} câu</h4>
+                <small class="text-muted d-block mb-3">Ôn lại: <strong class="text-warning">{{ stats.box_intervals.2 }}</strong></small>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-warning" style="width: 40%;"></div>
+                </div>
+                <small class="text-secondary" style="font-size: 11.5px;">{{ stats.box_descriptions.2 }}</small>
+            </div>
+        </div>
+        <!-- Box 3 -->
+        <div class="col">
+            <div class="card-custom p-4 h-100 border-top border-4 border-primary shadow-sm text-center">
+                <span class="badge bg-primary-subtle text-primary px-3 py-1 rounded-pill mb-2 fw-bold">Ngăn 3</span>
+                <h4 class="fw-bold mb-1">{{ stats.box_counts.3 }} câu</h4>
+                <small class="text-muted d-block mb-3">Ôn lại: <strong class="text-primary">{{ stats.box_intervals.3 }}</strong></small>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-primary" style="width: 60%;"></div>
+                </div>
+                <small class="text-secondary" style="font-size: 11.5px;">{{ stats.box_descriptions.3 }}</small>
+            </div>
+        </div>
+        <!-- Box 4 -->
+        <div class="col">
+            <div class="card-custom p-4 h-100 border-top border-4 border-info shadow-sm text-center">
+                <span class="badge bg-info-subtle text-info px-3 py-1 rounded-pill mb-2 fw-bold">Ngăn 4</span>
+                <h4 class="fw-bold mb-1">{{ stats.box_counts.4 }} câu</h4>
+                <small class="text-muted d-block mb-3">Ôn lại: <strong class="text-info">{{ stats.box_intervals.4 }}</strong></small>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-info" style="width: 80%;"></div>
+                </div>
+                <small class="text-secondary" style="font-size: 11.5px;">{{ stats.box_descriptions.4 }}</small>
+            </div>
+        </div>
+        <!-- Box 5 -->
+        <div class="col">
+            <div class="card-custom p-4 h-100 border-top border-4 border-success shadow-sm text-center">
+                <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill mb-2 fw-bold">Ngăn 5 ✅</span>
+                <h4 class="fw-bold mb-1">{{ stats.box_counts.5 }} câu</h4>
+                <small class="text-muted d-block mb-3">Ôn lại: <strong class="text-success">{{ stats.box_intervals.5 }}</strong></small>
+                <div class="progress mb-2" style="height: 6px;">
+                    <div class="progress-bar bg-success" style="width: 100%;"></div>
+                </div>
+                <small class="text-success fw-bold" style="font-size: 11.5px;">{{ stats.box_descriptions.5 }}</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Due Cards List Table -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold mb-0 text-dark">
+            <i class="bi bi-clock-history me-2 text-primary"></i>Danh Sách Câu Hỏi Cần Ôn Tập
+            <span class="badge bg-light text-secondary border fs-6 fw-normal ms-2">{{ current_mode|yesno:"Ngắn Hạn (< 1 tuần),Dài Hạn (1 tuần - 1 tháng)" }}</span>
+        </h4>
+        {% if stats.due_cards_count > 0 %}
+            <a href="{% url 'quizzes:review_session' %}?mode={{ current_mode }}" class="btn text-white rounded-pill px-4 fw-bold shadow-sm" style="background: var(--fluesy-grad);">
+                <i class="bi bi-play-circle me-1"></i> Bắt đầu ôn tập ({{ stats.due_cards_count }} câu)
+            </a>
+        {% endif %}
+    </div>
+
+    <div class="card-custom p-4 mb-5">
+        <div class="table-responsive">
+            <table class="table table-borderless table-custom align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 50%;">Nội dung câu hỏi</th>
+                        <th>Bộ đề gốc</th>
+                        <th>Ngăn hiện tại</th>
+                        <th>Chu kỳ ôn</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for card in due_cards %}
+                    <tr>
+                        <td class="fw-bold text-dark">
+                            <span class="text-truncate d-inline-block" style="max-width: 480px;">
+                                {{ card.question.question_text }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
+                                {{ card.question.quiz.title|truncatechars:25 }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge rounded-pill px-3 py-2 fw-bold
+                                {% if card.box_level == 1 %}bg-danger-subtle text-danger
+                                {% elif card.box_level == 2 %}bg-warning-subtle text-warning
+                                {% elif card.box_level == 3 %}bg-primary-subtle text-primary
+                                {% elif card.box_level == 4 %}bg-info-subtle text-info
+                                {% else %}bg-success-subtle text-success{% endif %}">
+                                Ngăn {{ card.box_level }}
+                            </span>
+                        </td>
+                        <td>
+                            <small class="text-muted fw-semibold">{{ card.get_interval_display }}</small>
+                        </td>
+                        <td>
+                            <small class="text-danger fw-bold"><i class="bi bi-alarm-fill me-1"></i>Đến hạn ôn</small>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-5">
+                            <i class="bi bi-check-circle-fill text-success fs-1 d-block mb-3 opacity-75"></i>
+                            <h5 class="fw-bold text-dark">Không có câu hỏi nào cần ôn trong chế độ này!</h5>
+                            <p class="text-muted">Các câu bạn làm sai khi luyện thi trắc nghiệm sẽ tự động xuất hiện ở đây theo chu kỳ đã chọn.</p>
+                            <a href="{% url 'quizzes:list' %}" class="btn btn-outline-primary rounded-pill px-4 mt-2">
+                                <i class="bi bi-journal-check me-1"></i> Luyện đề ngay
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectMode(mode, customHours = 1) {
+    fetch("{% url 'quizzes:switch_review_mode' %}", {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            mode: mode,
+            custom_first_hours: customHours
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = "{% url 'quizzes:spaced_repetition' %}?mode=" + mode;
+        } else {
+            alert('Lỗi: ' + data.error);
+        }
+    })
+    .catch(err => console.error(err));
+}
+
+function triggerLongTermMode() {
+    Swal.fire({
+        title: '⚠️ LƯU Ý KHI CHỌN CHẾ ĐỘ DÀI HẠN',
+        html: `
+            <div class="text-start fs-6 p-2">
+                <p class="mb-3">
+                    Chế độ <strong>Dài Hạn</strong> áp dụng chu kỳ lặp lại ngắt quãng kéo dài từ 
+                    <strong class="text-primary">1 tuần đến 1 tháng</strong> (1 ngày ➔ 3 ngày ➔ 7 ngày ➔ 14 ngày ➔ 30 ngày).
+                </p>
+                <div class="alert alert-warning border-0 p-3 rounded-3 mb-3">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                    <strong>Cảnh báo quan trọng:</strong><br>
+                    Nếu bạn sắp có bài kiểm tra hoặc kỳ thi trong vòng <strong>vài ngày tới</strong>, 
+                    các câu hỏi sẽ <strong>KHÔNG</strong> kịp xuất hiện lại trước giờ thi!
+                </div>
+                <p class="mb-0 text-muted">
+                    👉 Chế độ này phù hợp nhất cho: Học từ vựng ngoại ngữ (IELTS/TOEIC), chứng chỉ nghề, công thức nhớ trọn đời.
+                </p>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Tôi hiểu, Tiếp tục chọn Dài Hạn',
+        cancelButtonText: 'Giữ Chế độ Ngắn Hạn (< 1 tuần)',
+        confirmButtonColor: '#6a35ff',
+        cancelButtonColor: '#6c757d',
+        reverseButtons: true,
+        customClass: {
+            popup: 'rounded-4 shadow-lg'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            selectMode('long_term');
+        }
+    });
+}
+
+function changeFirstIntervalHours(hours) {
+    selectMode('short_term', parseInt(hours));
+}
+</script>
+{% endblock %}

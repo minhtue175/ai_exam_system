@@ -62,6 +62,7 @@ def dashboard_view(request):
         # Search results: đếm fresh (kết quả phụ thuộc từ khóa tìm kiếm)
         total_documents = documents.count()
         total_attempts = recent_attempts.count()
+        due_leitner_count = 0
     else:
         documents = documents.order_by('-created_at')
         recent_attempts = recent_attempts.order_by('-completed_at')[:5]
@@ -71,18 +72,29 @@ def dashboard_view(request):
         if cached_stats is not None:
             total_documents = cached_stats.get('total_documents', 0)
             total_attempts = cached_stats.get('total_attempts', 0)
+            due_leitner_count = cached_stats.get('due_leitner_count', 0)
         else:
             total_documents = documents.count()
             total_attempts = UserQuizAttempt.objects.filter(user=request.user).count()
+            
+            from apps.quizzes.models import ReviewCard
+            from django.utils import timezone
+            due_leitner_count = ReviewCard.objects.filter(
+                user=request.user,
+                next_review_at__lte=timezone.now()
+            ).count()
+
             CacheManager.set_dashboard_stats(request.user.id, {
                 'total_documents': total_documents,
                 'total_attempts': total_attempts,
+                'due_leitner_count': due_leitner_count,
             })
 
     context = {
         'documents': documents,
         'total_documents': total_documents,
         'total_attempts': total_attempts,
+        'due_leitner_count': due_leitner_count,
         'search_query': search_query,
         'recent_attempts': recent_attempts,
     }

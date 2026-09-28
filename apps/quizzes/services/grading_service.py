@@ -84,6 +84,22 @@ class GradingService:
         except Exception as e:
             logger.warning(f"Failed to invalidate cache after attempt: {e}")
         
+        # B1: Tự động phân loại câu hỏi vào hệ thống Spaced Repetition (Leitner System)
+        try:
+            from .leitner_service import LeitnerService
+            from ..models import ReviewCard
+            last_card = ReviewCard.objects.filter(user=user).order_by('-updated_at').first()
+            user_mode = last_card.review_mode if last_card else 'short_term'
+            custom_h = last_card.custom_first_interval_hours if last_card else 1
+            LeitnerService.update_cards_from_attempt(
+                user,
+                grading_result.get('results', []),
+                mode=user_mode,
+                custom_first_hours=custom_h
+            )
+        except Exception as e:
+            logger.warning(f"Failed to update Leitner cards after attempt: {e}")
+        
         return attempt
     
     @staticmethod

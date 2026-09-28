@@ -64,13 +64,28 @@
                         </div>
                         
                         <div class="mb-4">
-                            <label for="id_difficulty" class="form-label fw-bold fs-5">
-                                🎯 Độ khó
+                            <label for="id_difficulty" class="form-label fw-bold fs-5 d-flex justify-content-between align-items-center">
+                                <span>🎯 Cấp độ tư duy (Bloom's Taxonomy)</span>
+                                <span class="badge bg-primary-subtle text-primary fw-normal" style="font-size: 13px;">Phân loại sư phạm quốc tế</span>
                             </label>
-                            <select name="difficulty" id="id_difficulty" class="form-select form-select-lg" required>
-                                <option value="basic" selected>Cơ Bản</option>
-                                <option value="advanced">Nâng Cao</option>
+                            <select name="difficulty" id="id_difficulty" class="form-select form-select-lg" required onchange="updateBloomDescription()">
+                                <optgroup label="Thang đo Bloom (Khuyên dùng)">
+                                    <option value="remember" selected>Cấp 1: Nhớ (Remember) — Định nghĩa, thuật ngữ, sự kiện</option>
+                                    <option value="understand">Cấp 2: Hiểu (Understand) — Giải thích ý nghĩa, so sánh</option>
+                                    <option value="apply">Cấp 3: Áp dụng (Apply) — Tình huống thực tế, tính toán</option>
+                                    <option value="analyze">Cấp 4: Phân tích (Analyze) — Chia nhỏ vấn đề, nguyên nhân cốt lõi</option>
+                                    <option value="evaluate">Cấp 5: Đánh giá (Evaluate) — Nhận xét, tiêu chí, phán đoán</option>
+                                    <option value="create">Cấp 6: Sáng tạo (Create) — Tổng hợp, giải pháp cải tiến</option>
+                                </optgroup>
+                                <optgroup label="Mức độ truyền thống">
+                                    <option value="basic">Cơ bản (Tổng hợp Cấp 1 & 2)</option>
+                                    <option value="advanced">Nâng cao (Tổng hợp Cấp 3 & 4)</option>
+                                </optgroup>
                             </select>
+                            <div class="mt-2 p-3 rounded-3 bg-light border" id="bloomInfoBox">
+                                <small class="text-muted d-block fw-bold mb-1" id="bloomLevelTitle"><i class="bi bi-info-circle me-1 text-primary"></i> Cấp 1: Nhớ (Remember)</small>
+                                <small class="text-secondary" id="bloomLevelDesc">AI sẽ tập trung vào các câu hỏi yêu cầu nhắc lại định nghĩa, công thức, thuật ngữ và sự kiện chính có trong tài liệu.</small>
+                            </div>
                         </div>
                         
                         <div class="alert alert-warning border-warning">
@@ -133,13 +148,53 @@ form.submitting button[type="submit"]::after {
 </style>
 
 <script>
+const bloomDescriptions = {
+    'remember': {
+        title: 'Cấp 1: Nhớ (Remember) — Nhắc lại kiến thức',
+        desc: 'AI sẽ tập trung vào các câu hỏi yêu cầu nhắc lại định nghĩa, công thức, thuật ngữ và sự kiện chính có trong tài liệu.'
+    },
+    'understand': {
+        title: 'Cấp 2: Hiểu (Understand) — Giải thích ý nghĩa',
+        desc: 'AI sẽ đặt câu hỏi yêu cầu giải thích bản chất khái niệm, so sánh đối chiếu và diễn giải nguyên lý hoạt động.'
+    },
+    'apply': {
+        title: 'Cấp 3: Áp dụng (Apply) — Vận dụng thực tế',
+        desc: 'AI sẽ xây dựng các tình huống giả định hoặc bài toán cụ thể để kiểm tra khả năng áp dụng kiến thức vào thực tế.'
+    },
+    'analyze': {
+        title: 'Cấp 4: Phân tích (Analyze) — Phân tích mối quan hệ',
+        desc: 'AI sẽ tạo các câu hỏi đào sâu nguyên nhân - kết quả, phân biệt cấu trúc và nhận diện các yếu tố cốt lõi.'
+    },
+    'evaluate': {
+        title: 'Cấp 5: Đánh giá (Evaluate) — Phán đoán & Tiêu chí',
+        desc: 'AI sẽ yêu cầu đánh giá ưu/nhược điểm, nhận định giải pháp tối ưu và phản biện dựa trên tiêu chuẩn cụ thể.'
+    },
+    'create': {
+        title: 'Cấp 6: Sáng tạo (Create) — Tổng hợp & Đề xuất giải pháp',
+        desc: 'AI sẽ đưa ra bối cảnh mới đòi hỏi tổng hợp kiến thức từ nhiều phần để thiết kế, đề xuất phương án cải tiến.'
+    },
+    'basic': {
+        title: 'Cơ Bản (Tổng hợp Cấp 1 & 2)',
+        desc: 'Câu hỏi trực quan, đi thẳng vào các khái niệm nền tảng.'
+    },
+    'advanced': {
+        title: 'Nâng Cao (Tổng hợp Cấp 3 & 4)',
+        desc: 'Câu hỏi phân tích tình huống nâng cao và đào sâu tư duy.'
+    }
+};
+
+function updateBloomDescription() {
+    const val = document.getElementById('id_difficulty').value;
+    const info = bloomDescriptions[val] || bloomDescriptions['remember'];
+    document.getElementById('bloomLevelTitle').innerHTML = `<i class="bi bi-info-circle me-1 text-primary"></i> ${info.title}`;
+    document.getElementById('bloomLevelDesc').innerText = info.desc;
+}
 
 document.getElementById('quizForm').addEventListener('submit', function(e) {
     this.classList.add('submitting');
     const btn = document.getElementById('submitBtn');
     btn.innerHTML = 'Hệ thống AI đang phân tích...';
 });
-
 </script>
 {% endblock %}
 
