@@ -8,15 +8,29 @@
     <div class="row justify-content-center">
         <div class="col-md-9 col-lg-8">
             
-            <div class="card-custom p-4 mb-4 position-sticky top-0 shadow-sm z-3" style="background: var(--fluesy-grad); color: white;">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h4 class="mb-0 fw-bold text-truncate" style="max-width: 70%;"><i class="bi bi-pencil-square me-2"></i>{{ quiz.title }}</h4>
-                    <span class="badge bg-white text-dark rounded-pill fs-6 px-3 py-2 shadow-sm">{{ quiz.num_questions }} Câu</span>
+            <div class="card-custom p-3 px-4 mb-4 position-sticky top-0 shadow-sm z-3" style="background: var(--fluesy-grad); color: white; border-radius: 16px;">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2 overflow-hidden" style="max-width: 55%;">
+                        <i class="bi bi-pencil-square fs-5"></i>
+                        <h5 class="mb-0 fw-bold text-truncate" title="{{ quiz.title }}">{{ quiz.title }}</h5>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <!-- Adaptive Timer Component -->
+                        <div id="timerContainer" class="d-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white text-dark shadow-sm fw-bold transition-all">
+                            <i class="bi bi-stopwatch text-primary" id="timerIcon"></i>
+                            <span id="timerLabel" class="small text-muted d-none d-sm-inline">{% if duration_seconds > 0 %}Còn lại:{% else %}Thời gian:{% endif %}</span>
+                            <span id="timerDisplay" class="fs-6 font-monospace fw-bold text-primary">--:--</span>
+                        </div>
+                        
+                        <span class="badge bg-white text-dark rounded-pill fs-6 px-3 py-2 shadow-sm">{{ quiz.num_questions }} Câu</span>
+                    </div>
                 </div>
             </div>
             
-            <form method="POST" action="{% url 'quizzes:take' quiz.id %}">
+            <form method="POST" action="{% url 'quizzes:take' quiz.id %}" id="quizForm">
                 {% csrf_token %}
+                <input type="hidden" name="time_spent_seconds" id="timeSpentInput" value="0">
                 
                 {% for question in questions %}
                 <div class="card-custom p-4 mb-4" id="q-container-{{ question.id }}">
@@ -26,12 +40,12 @@
                     
                     <div class="ps-md-2">
                         {% for option in question.options %}
-                        <div class="form-check custom-radio mb-3 p-3 rounded border transition-all d-flex align-items-start" style="background-color: #fcfcfd;">
+                        <div class="form-check custom-radio mb-3 p-3 rounded border transition-all d-flex align-items-start" style="background-color: var(--card-opt-bg, #fcfcfd);">
                             <input class="form-check-input ms-1 me-3 mt-1" type="radio" 
                                    name="question_{{ question.id }}" 
                                    id="q{{ question.id }}_opt{{ forloop.counter0 }}" 
                                    value="{{ forloop.counter0 }}" style="transform: scale(1.2); cursor: pointer; flex-shrink: 0;">
-                            <label class="form-check-label w-100 cursor-pointer text-dark lh-base" for="q{{ question.id }}_opt{{ forloop.counter0 }}" style="cursor: pointer;">
+                            <label class="form-check-label w-100 cursor-pointer lh-base" for="q{{ question.id }}_opt{{ forloop.counter0 }}" style="cursor: pointer; color: var(--text-main);">
                                 <strong>{{ forloop.counter0|to_char }}.</strong> {{ option|clean_prefix }}
                             </label>
                         </div>
@@ -56,7 +70,7 @@
                             <div class="modal-body fs-5 py-5 text-center px-4">
                                 Bạn đã chắc chắn muốn nộp bài chấm điểm chưa?
                                 <br>
-                                <small class="text-muted fs-6 mt-3 d-block">Hãy đảm bảo bạn đã chọn đáp án cho tất cả các câu hỏi.</small>
+                                <small class="text-muted fs-6 mt-3 d-block">Hãy đảm bảo bạn đã hoàn thành câu trả lời tốt nhất của mình.</small>
                             </div>
                             <div class="modal-footer bg-light border-0" style="border-radius: 0 0 16px 16px;">
                                 <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold rounded-pill shadow-sm" id="realSubmitBtn">Vâng, Nộp Bài Ngay</button>
@@ -71,20 +85,111 @@
 </div>
 
 <style>
-   
     .custom-radio:has(input:checked) {
         background-color: var(--primary-light) !important;
         border-color: var(--primary-color) !important;
     }
+    @keyframes pulseDanger {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(220, 53, 69, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .pulse-warning {
+        animation: pulseDanger 1.2s infinite;
+    }
 </style>
 
 <script>
-    document.getElementById('realSubmitBtn').addEventListener('click', function() {
-        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang chấm điểm...';
-        this.classList.add('disabled');
-        this.style.pointerEvents = 'none';
-        document.getElementById('closeModalBtn').style.display = 'none'; // Khóa thoát
-    });
+    (function() {
+        const durationSeconds = {{ duration_seconds|default:0 }};
+        const startTime = Date.now();
+        const timerDisplay = document.getElementById('timerDisplay');
+        const timerContainer = document.getElementById('timerContainer');
+        const timerIcon = document.getElementById('timerIcon');
+        const timeSpentInput = document.getElementById('timeSpentInput');
+        const quizForm = document.getElementById('quizForm');
+        let autoSubmitted = false;
+
+        function formatTime(totalSec) {
+            const mins = Math.floor(totalSec / 60);
+            const secs = totalSec % 60;
+            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        function updateTimer() {
+            const timeSpent = Math.max(0, Math.floor((Date.now() - startTime) / 1000));
+            timeSpentInput.value = timeSpent;
+
+            if (durationSeconds > 0) {
+                const remaining = durationSeconds - timeSpent;
+                if (remaining <= 0) {
+                    clearInterval(timerInterval);
+                    timerDisplay.textContent = '00:00';
+                    timeSpentInput.value = durationSeconds;
+                    
+                    if (!autoSubmitted) {
+                        autoSubmitted = true;
+                        // Khóa giao diện và tự động nộp bài
+                        const submitModal = bootstrap.Modal.getInstance(document.getElementById('confirmSubmitModal'));
+                        if (submitModal) {
+                            submitModal.hide();
+                        }
+                        
+                        Swal.fire({
+                            title: 'Hết giờ làm bài! ⏰',
+                            text: 'Thời gian làm bài đã kết thúc. Hệ thống đang tự động nộp bài và chấm điểm...',
+                            icon: 'warning',
+                            allowOutsideClick: false,
+                            showConfirmButton: false,
+                            timer: 2200
+                        });
+                        
+                        setTimeout(() => {
+                            quizForm.submit();
+                        }, 2000);
+                    }
+                    return;
+                }
+
+                timerDisplay.textContent = formatTime(remaining);
+
+                // Cảnh báo dưới 60 giây
+                if (remaining <= 60) {
+                    timerContainer.classList.remove('bg-white', 'text-dark');
+                    timerContainer.classList.add('bg-danger', 'text-white', 'pulse-warning');
+                    timerIcon.classList.remove('text-primary');
+                    timerIcon.classList.add('text-white');
+                    timerDisplay.classList.remove('text-primary');
+                    timerDisplay.classList.add('text-white');
+                } else if (remaining <= 180) {
+                    // Dưới 3 phút: chuyển số sang màu cam cảnh báo
+                    timerDisplay.classList.remove('text-primary');
+                    timerDisplay.classList.add('text-warning');
+                }
+            } else {
+                // Đề không giới hạn thời gian -> Đếm tiến
+                timerDisplay.textContent = formatTime(timeSpent);
+            }
+        }
+
+        // Chạy ngay lần đầu
+        updateTimer();
+        const timerInterval = setInterval(updateTimer, 1000);
+
+        // Nút nộp bài thủ công
+        const realSubmitBtn = document.getElementById('realSubmitBtn');
+        if (realSubmitBtn) {
+            realSubmitBtn.addEventListener('click', function() {
+                clearInterval(timerInterval);
+                timeSpentInput.value = Math.max(1, Math.floor((Date.now() - startTime) / 1000));
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang chấm điểm...';
+                this.classList.add('disabled');
+                this.style.pointerEvents = 'none';
+                document.getElementById('closeModalBtn').style.display = 'none';
+            });
+        }
+    })();
 </script>
 {% endblock %}
+
 

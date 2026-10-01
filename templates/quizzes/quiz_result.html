@@ -26,9 +26,14 @@
                 <div class="vr bg-white opacity-25 d-none d-md-block" style="width: 3px; height: 80px;"></div>
                 <div class="text-md-start text-center px-4">
                     <h3 class="mb-2">Trả lời đúng: <span class="text-warning fw-bold">{{ attempt.correct_answers }}</span> / {{ attempt.total_questions }} câu</h3>
-                    <p class="mb-0 fs-5 opacity-75"><i class="bi bi-clock"></i> Nộp lúc: {{ attempt.completed_at|date:"H:i - d/m/Y" }}</p>
+                    <div class="d-flex align-items-center gap-3 flex-wrap opacity-75 fs-5">
+                        <span><i class="bi bi-clock"></i> Nộp lúc: {{ attempt.completed_at|date:"H:i - d/m/Y" }}</span>
+                        <span>•</span>
+                        <span><i class="bi bi-stopwatch"></i> Thời gian làm: <strong class="text-warning">{{ attempt.formatted_time_spent }}</strong></span>
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
 

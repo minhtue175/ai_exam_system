@@ -169,26 +169,39 @@ def quiz_take_view(request, pk):
         # 3. Dùng GradingService để chấm điểm
         grading_result = GradingService.grade_shuffled_quiz(shuffled_questions, user_answers)
         
-        # 4. Lưu kết quả
-        attempt = GradingService.save_attempt(quiz, request.user, user_answers, grading_result)
+        # 4. Thu thập thời gian hoàn thành (tính bằng giây)
+        time_spent_raw = request.POST.get('time_spent_seconds', '0')
+        try:
+            time_spent_seconds = max(0, int(time_spent_raw))
+        except (ValueError, TypeError):
+            time_spent_seconds = 0
+            
+        # 5. Lưu kết quả
+        attempt = GradingService.save_attempt(
+            quiz=quiz,
+            user=request.user,
+            user_answers=user_answers,
+            grading_result=grading_result,
+            time_spent_seconds=time_spent_seconds
+        )
         
-        # 5. Xóa seed để user không thể f5 nộp lại bài cũ
+        # 6. Xóa seed để user không thể f5 nộp lại bài cũ
         request.session.pop(session_key, None)
         
         messages.success(request, "Đã nộp bài thành công!")
         return redirect('quizzes:result', attempt_id=attempt.id)
 
-    
     seed = request.session.get(session_key) or random.randint(0, 2**32 - 1)
     request.session[session_key] = seed
 
-
     questions_raw = list(quiz.questions.values('id', 'question_text', 'options', 'correct_answer'))
     shuffled_questions = QuestionShuffler.shuffle_quiz(questions_raw, seed=seed)
+    duration_seconds = (quiz.duration_minutes * 60) if (quiz.duration_minutes and quiz.duration_minutes > 0) else 0
     
     return render(request, 'quizzes/quiz_take.html', {
         'quiz': quiz,
-        'questions': shuffled_questions  
+        'questions': shuffled_questions,
+        'duration_seconds': duration_seconds
     })
 
 @login_required

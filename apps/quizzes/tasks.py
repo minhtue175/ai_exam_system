@@ -40,13 +40,32 @@ def generate_quiz_task(document_id, user_id, num_questions, difficulty):
             f"user_{user.id}", # Tên nhóm trùng với ID của user đang tạo đề
             {
                 'type': 'send_notification',
-                'message': f"Ting ting! Đề thi '{quiz.title}' đã được hoàn thành. Chúc bạn làm bài tốt!"
+                'notification_type': 'success',
+                'title': 'Đề thi đã sẵn sàng! 🎉',
+                'message': f"Đề thi '{quiz.title}' ({quiz.num_questions} câu) đã được AI hoàn thành!",
+                'quiz_id': quiz.id,
+                'url': f"/quizzes/{quiz.id}/"
             }
         )
     
-        
         return quiz.id
         
     except Exception as e:
-        logger.error(f"Lỗi khi chạy Celery Task tạo Quiz (Doc ID {document_id}): {str(e)}")
-        raise e
+        error_msg = str(e)
+        logger.error(f"Lỗi khi chạy Celery Task tạo Quiz (Doc ID {document_id}): {error_msg}")
+        try:
+            channel_layer = get_channel_layer()
+            async_to_sync(channel_layer.group_send)(
+                f"user_{user_id}",
+                {
+                    'type': 'send_notification',
+                    'notification_type': 'error',
+                    'title': 'Không thể tạo đề thi ⚠️',
+                    'message': f"Đã xảy ra sự cố khi sinh đề bằng AI: {error_msg[:120]}. Vui lòng kiểm tra lại tài liệu hoặc thử lại.",
+                    'quiz_id': None,
+                    'url': None
+                }
+            )
+        except Exception as notify_err:
+            logger.warning(f"Không thể gửi thông báo lỗi qua WebSocket tới user_{user_id}: {notify_err}")
+        raise e

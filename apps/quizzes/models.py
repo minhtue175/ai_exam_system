@@ -143,6 +143,17 @@ class UserQuizAttempt(TimeStampedModel):
     def __str__(self):
         return f"{self.user.username} - {self.quiz.title} - {self.score} điểm"
 
+    @property
+    def formatted_time_spent(self):
+        """Định dạng thời gian làm bài dạng 'X phút Y giây' hoặc 'Y giây'"""
+        if not self.time_spent_seconds or self.time_spent_seconds <= 0:
+            return "Dưới 1 phút"
+        mins, secs = divmod(self.time_spent_seconds, 60)
+        if mins > 0:
+            return f"{mins} phút {secs} giây" if secs > 0 else f"{mins} phút"
+        return f"{secs} giây"
+
+
 
 class ReviewCard(TimeStampedModel):
     """
