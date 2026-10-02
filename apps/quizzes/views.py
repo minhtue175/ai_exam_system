@@ -112,14 +112,21 @@ def quiz_create_view(request, document_id):
 
 @login_required
 def quiz_detail_view(request, pk):
-    """Xem chi tiết bộ đề đã tạo (Preview)"""
-    
+    """Xem chi tiết bộ đề đã tạo (Preview) kèm lịch sử làm bài"""
     quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
     questions = quiz.questions.all().order_by('order')
+    
+    attempts = quiz.attempts.filter(user=request.user).order_by('-completed_at')
+    best_score = None
+    if attempts.exists():
+        best_score = max(a.score for a in attempts)
     
     return render(request, 'quizzes/detail.html', {
         'quiz': quiz,
         'questions': questions,
+        'attempts': attempts,
+        'best_score': best_score,
+        'attempts_count': attempts.count(),
     })
 
 @login_required

@@ -76,8 +76,13 @@
                 {% for attempt in recent_attempts %}
                 <tr class="transition-all hover-shadow-sm">
                     <td class="fw-bold text-dark">
-                        <i class="bi bi-play-btn-fill text-primary me-2 fs-5"></i> <span class="text-truncate d-inline-block" style="max-width: 250px; vertical-align: bottom;">{{ attempt.quiz.title }}</span>
+                        <i class="bi bi-play-btn-fill text-primary me-2 fs-5"></i> 
+                        <span class="text-truncate d-inline-block" style="max-width: 250px; vertical-align: bottom;">{{ attempt.display_title }}</span>
+                        {% if not attempt.quiz %}
+                            <span class="badge bg-secondary-subtle text-secondary rounded-pill ms-1" style="font-size: 11px;">Đã xóa đề</span>
+                        {% endif %}
                     </td>
+
                     <td>
                         <span class="badge rounded-pill px-3 py-2 fw-bold
                             {% if attempt.score >= 8 %}bg-success-subtle text-success

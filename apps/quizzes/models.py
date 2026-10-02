@@ -108,8 +108,16 @@ class UserQuizAttempt(TimeStampedModel):
     
     quiz = models.ForeignKey(
         Quiz,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='attempts'
+    )
+    quiz_title = models.CharField(
+        max_length=255,
+        default='',
+        blank=True,
+        help_text="Lưu cố định tên đề thi lúc làm bài, chống mất dữ liệu khi đề gốc bị xóa"
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -141,7 +149,18 @@ class UserQuizAttempt(TimeStampedModel):
         ]
     
     def __str__(self):
-        return f"{self.user.username} - {self.quiz.title} - {self.score} điểm"
+        title = self.quiz.title if self.quiz else (self.quiz_title or "Đề đã xóa")
+        return f"{self.user.username} - {title} - {self.score} điểm"
+
+    @property
+    def display_title(self):
+        """Trả về tên đề thi hiển thị, có gắn cờ nếu đề đã bị xóa"""
+        if self.quiz:
+            return self.quiz.title
+        if self.quiz_title:
+            return f"{self.quiz_title} (Đã xóa)"
+        return "Đề thi (Đã xóa)"
+
 
     @property
     def formatted_time_spent(self):

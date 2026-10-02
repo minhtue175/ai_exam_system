@@ -238,7 +238,10 @@
                 {% for attempt in recent_attempts %}
                 <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
                     <div>
-                        <span class="fw-bold text-truncate d-inline-block" style="max-width: 180px; vertical-align: bottom;">{{ attempt.quiz.title }}</span>
+                        <span class="fw-bold text-truncate d-inline-block" style="max-width: 180px; vertical-align: bottom;">{{ attempt.display_title }}</span>
+                        {% if not attempt.quiz %}
+                        <span class="badge bg-secondary ms-1" style="font-size: 0.65rem;">Đã xóa đề</span>
+                        {% endif %}
                         <br><small class="text-muted">{{ attempt.completed_at|date:"d/m/Y H:i" }}</small>
                     </div>
                     <span class="badge rounded-pill px-3 py-2 fw-bold

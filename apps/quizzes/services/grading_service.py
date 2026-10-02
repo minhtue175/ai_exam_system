@@ -64,6 +64,7 @@ class GradingService:
         """Save quiz attempt to database"""
         attempt = UserQuizAttempt.objects.create(
             quiz=quiz,
+            quiz_title=quiz.title if quiz else '',
             user=user,
             answers=user_answers,
             
@@ -74,6 +75,7 @@ class GradingService:
             time_spent_seconds=time_spent_seconds,
             completed_at=timezone.now()
         )
+
         
         logger.info(f"Quiz attempt saved: User={user.username}, Score={attempt.score}")
         
