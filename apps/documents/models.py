@@ -36,6 +36,9 @@ class Document(TimeStampedModel):
     def __str__(self):
         return self.filename
 
+import logging
+logger = logging.getLogger(__name__)
+
 @receiver(post_delete, sender=Document)
 def auto_delete_file_on_delete(sender, instance, **kwargs):
     """
@@ -43,5 +46,13 @@ def auto_delete_file_on_delete(sender, instance, **kwargs):
     khi người dùng xóa Document trên web hoặc qua Admin.
     """
     if instance.file_path:
-        if os.path.isfile(instance.file_path.path):
-            os.remove(instance.file_path.path)
+        try:
+            raw_name = str(instance.file_path.name or '')
+            if os.path.isabs(raw_name) and os.path.isfile(raw_name):
+                os.remove(raw_name)
+                logger.info(f"Đã dọn dẹp file vật lý tại: {raw_name}")
+            else:
+                instance.file_path.delete(save=False)
+                logger.info(f"Đã dọn dẹp file vật lý của Document {instance.id}")
+        except Exception as e:
+            logger.warning(f"Lỗi khi xóa file vật lý của Document {instance.id}: {e}")

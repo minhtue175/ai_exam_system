@@ -85,3 +85,11 @@ class DocumentSecurityTests(TestCase):
         url = reverse('documents:extract', kwargs={'pk': self.doc_a.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 405)
+
+    def test_document_deletion_removes_physical_file(self):
+        """Khi xóa Document, file vật lý tương ứng trên đĩa được dọn dẹp tự động"""
+        file_path = self.temp_file.name
+        self.assertTrue(os.path.exists(file_path))
+        self.doc_a.delete()
+        self.assertFalse(os.path.exists(file_path))
+

@@ -103,3 +103,22 @@ class QuizAttemptPreservationTest(TestCase):
         self.assertContains(response, '2 lần thi')
         self.assertContains(response, 'Kỷ lục')
         self.assertIn('10', response.content.decode('utf-8'))
+
+    def test_admin_registration(self):
+        """Kiểm tra các model Quiz, Question, UserQuizAttempt, ReviewCard đã được đăng ký vào Django Admin."""
+        from django.contrib import admin
+        from apps.quizzes.models import Question, ReviewCard
+        
+        self.assertIn(Quiz, admin.site._registry)
+        self.assertIn(Question, admin.site._registry)
+        self.assertIn(UserQuizAttempt, admin.site._registry)
+        self.assertIn(ReviewCard, admin.site._registry)
+
+    def test_celery_task_timeout_and_retry_config(self):
+        """Kiểm tra Celery task generate_quiz_task có đủ time_limit, soft_time_limit và max_retries."""
+        from apps.quizzes.tasks import generate_quiz_task
+        
+        self.assertEqual(generate_quiz_task.time_limit, 300)
+        self.assertEqual(generate_quiz_task.soft_time_limit, 240)
+        self.assertEqual(generate_quiz_task.max_retries, 2)
+
