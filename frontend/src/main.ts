@@ -2,13 +2,17 @@ import { themeManager } from './modules/theme-manager';
 import { notificationClient } from './modules/notification-socket';
 import { QuizEngine } from './modules/quiz-engine';
 import { LeitnerReviewEngine } from './modules/leitner-system';
-import { ReviewCardItem } from './types';
+import { analyticsChartEngine } from './modules/analytics-chart';
+import { documentUploadManager } from './modules/document-uploader';
+import { ReviewCardItem, ScoreTrendDataPoint } from './types';
 
 export * from './types';
 export * from './modules/theme-manager';
 export * from './modules/notification-socket';
 export * from './modules/quiz-engine';
 export * from './modules/leitner-system';
+export * from './modules/analytics-chart';
+export * from './modules/document-uploader';
 
 // Khởi tạo các module toàn cục
 if (typeof document !== 'undefined') {
@@ -19,6 +23,41 @@ if (typeof document !== 'undefined') {
     const userElement = document.querySelector('[data-user-authenticated="true"]') || document.querySelector('.left-sidebar');
     if (userElement) {
       notificationClient.connect();
+    }
+
+    // Tự động kích hoạt đồng hồ & chào hỏi trên Dashboard
+    if (document.getElementById('realtime-clock')) {
+      analyticsChartEngine.initClockAndGreeting();
+    }
+
+    // Tự động kích hoạt biểu đồ điểm số trên Dashboard nếu có canvas
+    const scoreChartCanvas = document.getElementById('scoreChart');
+    const scoreDataScript = document.getElementById('scoreChartDataJson');
+    if (scoreChartCanvas && scoreDataScript) {
+      try {
+        const points = JSON.parse(scoreDataScript.textContent || '[]') as ScoreTrendDataPoint[];
+        analyticsChartEngine.renderScoreTrendChart('scoreChart', points);
+      } catch (e) {
+        console.error('[Main] Lỗi parse scoreChartDataJson:', e);
+      }
+    }
+
+    // Tự động kích hoạt Bloom's Taxonomy selector khi tạo đề thi AI
+    if (document.getElementById('id_difficulty')) {
+      documentUploadManager.initBloomSelector('id_difficulty');
+    }
+
+    // Tự động kích hoạt Drag and Drop Zone tải tài liệu
+    if (document.getElementById('dropZone')) {
+      documentUploadManager.initDropzone('dropZone', 'fileInput');
+    }
+
+    // Tự động gắn sự kiện nút copy văn bản trích xuất
+    const copyBtn = document.getElementById('copyExtractedTextBtn');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        documentUploadManager.copyExtractedText('pre');
+      });
     }
 
     // Tự động kích hoạt Quiz Engine nếu đang ở trang làm bài thi
