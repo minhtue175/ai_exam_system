@@ -12,13 +12,64 @@ from django.conf import settings
 import json
 import re
 import time
-from typing import List, Dict
-import logging
+import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from apps.core.cache_utils import CacheManager
 from .text_processor import TextRankSummarizer, SemanticChunker, QuestionDeduplicator
 
 logger = logging.getLogger(__name__)
+
+
+class GeminiKeyPool:
+    """
+    Quản lý danh sách Gemini API Keys (Key Rotation Pool):
+    - Tự động luân phiên (Round-Robin) giữa các key khỏe mạnh.
+    - Tự động phát hiện lỗi 429 / QuotaExceeded / ResourceExhausted và đưa key vào trạng thái Cooldown (nghỉ 60s).
+    - Tức thì chuyển sang key dự phòng tiếp theo để không làm gián đoạn bài thi của học viên.
+    """
+    def __init__(self, api_keys: List[str]):
+        self.keys = list(dict.fromkeys([k.strip() for k in api_keys if k and k.strip()]))
+        self.cooldowns: Dict[str, float] = {}  # key -> timestamp hết hạn cooldown
+        self.current_idx = 0
+        self._clients: Dict[str, genai.Client] = {}
+        
+        for k in self.keys:
+            try:
+                self._clients[k] = genai.Client(api_key=k)
+            except Exception as e:
+                logger.warning(f"Không thể khởi tạo client cho API key ...{k[-6:] if len(k) >= 6 else '***'}: {e}")
+
+    def get_healthy_client(self) -> tuple[genai.Client, str]:
+        """Lấy một Client có API Key sẵn sàng, ưu tiên key chưa bị cooldown"""
+        now = time.time()
+        available_keys = [k for k in self.keys if self.cooldowns.get(k, 0) <= now]
+        
+        if not available_keys:
+            # Nếu tất cả key đều bị cooldown, chọn key có thời gian cooldown sắp hết nhất
+            logger.warning("Toàn bộ API Keys trong Pool đều đang trong thời gian Cooldown! Đang tái sử dụng key có thời gian chờ ngắn nhất...")
+            sorted_keys = sorted(self.keys, key=lambda k: self.cooldowns.get(k, 0))
+            chosen_key = sorted_keys[0]
+        else:
+            # Round-robin giữa các available keys
+            self.current_idx = (self.current_idx + 1) % len(available_keys)
+            chosen_key = available_keys[self.current_idx]
+
+        client = self._clients.get(chosen_key)
+        if not client:
+            client = genai.Client(api_key=chosen_key)
+            self._clients[chosen_key] = client
+
+        return client, chosen_key
+
+    def mark_key_exhausted(self, key: str, cooldown_seconds: int = 60):
+        """Đánh dấu key bị quá tải (429/ResourceExhausted) và tạm thời cho nghỉ"""
+        self.cooldowns[key] = time.time() + cooldown_seconds
+        masked_key = f"...{key[-6:]}" if len(key) >= 6 else "***"
+        logger.warning(
+            f"⚠️ Gemini API Key {masked_key} đã hết hạn mức (429/Quota). "
+            f"Đang đưa vào Cooldown {cooldown_seconds}s và chuyển sang Key dự phòng khác..."
+        )
 
 
 class GeminiQuizGenerator:
@@ -111,12 +162,16 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
 """
 
     def __init__(self):
-        """Khởi tạo Gemini AI Client"""
-        api_key = settings.GEMINI_API_KEY
-        if not api_key:
-            raise ValueError("GEMINI_API_KEY chưa được cấu hình!")
-        self.client = genai.Client(api_key=api_key)
-        logger.info("Gemini AI Client initialized successfully")
+        """Khởi tạo Gemini AI Client với Key Rotation Pool"""
+        keys = getattr(settings, 'GEMINI_API_KEYS', [])
+        if not keys and getattr(settings, 'GEMINI_API_KEY', ''):
+            keys = [settings.GEMINI_API_KEY]
+        
+        if not keys:
+            raise ValueError("Chưa có GEMINI_API_KEY nào được cấu hình trong file .env!")
+
+        self.key_pool = GeminiKeyPool(keys)
+        logger.info(f"GeminiKeyPool đã kích hoạt thành công với {len(self.key_pool.keys)} API Keys dự phòng.")
 
     def _determine_batches(self, total_questions: int) -> List[int]:
         """
@@ -142,8 +197,9 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
 
     def _call_gemini_with_fallback(self, prompt: str) -> str:
         """
-        Gọi API Gemini với cơ chế Auto-Fallback:
-        Nếu model chính quá tải (503/429), tự động chuyển sang model dự phòng tiếp theo.
+        Gọi API Gemini với cơ chế Auto-Fallback 2 chiều:
+        1. Key Rotation: Đổi sang API Key khác khi gặp lỗi 429 / Quota / ResourceExhausted.
+        2. Model Fallback: Đổi sang candidate model tiếp theo khi gặp lỗi 503 / High Demand.
         """
         config = types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -151,29 +207,51 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         )
 
         last_error = None
-        for model_name in self.CANDIDATE_MODELS:
-            for attempt in range(2):
-                try:
-                    logger.info(f"Đang gọi Gemini model '{model_name}' (Thử lần {attempt + 1})...")
-                    response = self.client.models.generate_content(
-                        model=model_name,
-                        contents=prompt,
-                        config=config
-                    )
-                    if response.text and response.text.strip():
-                        return response.text.strip()
-                except Exception as err:
-                    err_msg = str(err).lower()
-                    last_error = err
-                    if '503' in err_msg or 'unavailable' in err_msg or 'high demand' in err_msg or '429' in err_msg:
-                        logger.warning(f"Model '{model_name}' đang quá tải. Đổi thử model khác...")
-                        time.sleep(1.5)
-                        break  # Đổi sang candidate model tiếp theo
-                    else:
-                        logger.warning(f"Lỗi gọi model '{model_name}': {err}")
-                        time.sleep(1)
+        max_key_attempts = max(len(self.key_pool.keys), 1)
 
-        raise Exception(f"Tất cả các mô hình AI đều đang bận: {str(last_error)}")
+        for key_attempt in range(max_key_attempts):
+            client, active_key = self.key_pool.get_healthy_client()
+            masked_key = f"...{active_key[-6:]}" if len(active_key) >= 6 else "***"
+
+            for model_name in self.CANDIDATE_MODELS:
+                for attempt in range(2):
+                    try:
+                        logger.info(
+                            f"Đang gọi Gemini model '{model_name}' với Key {masked_key} "
+                            f"(Thử lần {attempt + 1})..."
+                        )
+                        response = client.models.generate_content(
+                            model=model_name,
+                            contents=prompt,
+                            config=config
+                        )
+                        if response.text and response.text.strip():
+                            return response.text.strip()
+                    except Exception as err:
+                        err_msg = str(err).lower()
+                        last_error = err
+                        
+                        # 1. Phát hiện lỗi hết Quota / Rate Limit 429 trên Key này
+                        if '429' in err_msg or 'resource_exhausted' in err_msg or 'quota' in err_msg:
+                            self.key_pool.mark_key_exhausted(active_key, cooldown_seconds=60)
+                            # Thoát khỏi vòng lặp model để chuyển sang Key tiếp theo ngay
+                            break
+                        
+                        # 2. Phát hiện lỗi Model quá tải (503/Unavailable)
+                        elif '503' in err_msg or 'unavailable' in err_msg or 'high demand' in err_msg:
+                            logger.warning(f"Model '{model_name}' đang quá tải. Đổi thử model khác...")
+                            time.sleep(1.5)
+                            break  # Chuyển sang candidate model tiếp theo
+                        else:
+                            logger.warning(f"Lỗi gọi model '{model_name}': {err}")
+                            time.sleep(1)
+                else:
+                    continue
+                # Nếu đã break do 429 (hết quota key), nhảy sang key_attempt tiếp theo
+                if active_key in self.key_pool.cooldowns:
+                    break
+
+        raise Exception(f"Tất cả các API Keys và mô hình AI đều đang bận hoặc quá tải: {str(last_error)}")
 
     def _generate_single_batch(self, chunk_text: str, batch_count: int, difficulty: str, key_concepts: str, batch_idx: int) -> List[Dict]:
         """Worker tạo 1 batch câu hỏi từ 1 phân đoạn văn bản"""
@@ -201,12 +279,14 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         self,
         text_content: str,
         num_questions: int = 10,
-        difficulty: str = "remember"
+        difficulty: str = "remember",
+        force_regenerate: bool = False
     ) -> List[Dict]:
         """
         Hàm chính sinh câu hỏi trắc nghiệm:
+        - Semantic / Prompt Cache: Tiết kiệm chi phí AI & Phản hồi tức thì khi tạo lại đề cùng cấu hình
         - Phân loại cấp độ tư duy Bloom's Taxonomy (remember, understand, apply, analyze, evaluate, create)
-        - TextRank trích xuất ý chính toàn văn
+        - TextRank trích xuất ý chính toàn văn (có cache)
         - SemanticChunker phân đoạn tài liệu
         - ThreadPoolExecutor chạy song song các batch
         - QuestionDeduplicator khử trùng lặp
@@ -226,9 +306,29 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         if difficulty not in valid_difficulties:
             difficulty = 'remember'
 
-        # 1. Thuật toán TextRank: Trích xuất các câu cốt lõi của toàn văn
-        logger.info("Đang chạy thuật toán TextRank để trích xuất ý tưởng cốt lõi...")
-        key_sentences = TextRankSummarizer.extract_key_sentences(text_content, top_k=6)
+        # Tính toán mã băm SHA256 đại diện cho văn bản
+        text_hash = hashlib.sha256(text_content.encode('utf-8')).hexdigest()[:16]
+
+        # ⚡ 0. SEMANTIC & PROMPT CACHE CHECK (Kiểm tra xem đề thi đã từng được sinh hay chưa)
+        if not force_regenerate:
+            cached_quiz = CacheManager.get_ai_quiz(text_hash, num_questions, difficulty)
+            if cached_quiz and len(cached_quiz) >= num_questions:
+                logger.info(
+                    f"⚡ [Cache HIT] Tái sử dụng {num_questions} câu hỏi từ Semantic Cache (hash={text_hash}). "
+                    f"Phản hồi ngay tức thì, tiết kiệm 100% chi phí AI Token!"
+                )
+                return cached_quiz[:num_questions]
+
+        # 1. Thuật toán TextRank: Trích xuất các câu cốt lõi (Kiểm tra cache trước)
+        cached_summary = CacheManager.get_ai_summary(text_hash)
+        if cached_summary:
+            logger.info("⚡ [Cache HIT] Tái sử dụng tóm tắt TextRank từ Semantic Cache.")
+            key_sentences = cached_summary
+        else:
+            logger.info("Đang chạy thuật toán TextRank để trích xuất ý tưởng cốt lõi...")
+            key_sentences = TextRankSummarizer.extract_key_sentences(text_content, top_k=6)
+            CacheManager.set_ai_summary(text_hash, key_sentences)
+
         key_concepts_text = "\n- " + "\n- ".join(key_sentences) if key_sentences else ""
 
         # 2. Thuật toán Phân bổ Batch (Chia để trị)
@@ -278,8 +378,11 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         # Cắt đúng số lượng người dùng yêu cầu
         final_questions = unique_questions[:num_questions]
         
+        # ⚡ Lưu vào Semantic / Prompt Cache cho các lần tái sử dụng sau (TTL 24 giờ)
+        CacheManager.set_ai_quiz(text_hash, num_questions, difficulty, final_questions)
+
         elapsed = time.time() - start_time
-        logger.info(f"🎉 Hoàn thành sinh {len(final_questions)} câu hỏi trong {elapsed:.2f} giây (Tăng tốc song song)!")
+        logger.info(f"🎉 Hoàn thành sinh {len(final_questions)} câu hỏi trong {elapsed:.2f} giây (Đã lưu vào Semantic Cache)!")
 
         return final_questions
 

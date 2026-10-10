@@ -33,6 +33,7 @@ def _send_failure_notification(user_id, error_message):
 
 @shared_task(
     bind=True,
+    queue='queue_ai',
     max_retries=2,
     default_retry_delay=10,
     time_limit=300,        # Giới hạn cứng: 5 phút

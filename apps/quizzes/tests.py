@@ -122,3 +122,44 @@ class QuizAttemptPreservationTest(TestCase):
         self.assertEqual(generate_quiz_task.soft_time_limit, 240)
         self.assertEqual(generate_quiz_task.max_retries, 2)
 
+    def test_gemini_key_pool_rotation(self):
+        """Kiểm tra cơ chế xoay vòng và cooldown của GeminiKeyPool khi gặp lỗi quota 429."""
+        from apps.quizzes.services.ai_generator import GeminiKeyPool
+        keys = ['FAKE_KEY_1', 'FAKE_KEY_2', 'FAKE_KEY_3']
+        pool = GeminiKeyPool(keys)
+        
+        self.assertEqual(len(pool.keys), 3)
+        client, first_key = pool.get_healthy_client()
+        self.assertIn(first_key, keys)
+        
+        # Đánh dấu first_key bị hết quota (429)
+        pool.mark_key_exhausted(first_key, cooldown_seconds=60)
+        self.assertIn(first_key, pool.cooldowns)
+        
+        # Lần lấy tiếp theo phải trả về key khác
+        client2, second_key = pool.get_healthy_client()
+        self.assertNotEqual(second_key, first_key)
+        self.assertIn(second_key, ['FAKE_KEY_2', 'FAKE_KEY_3'])
+
+    def test_ai_semantic_and_prompt_caching(self):
+        """Kiểm tra hoạt động lưu và đọc bộ nhớ đệm AI Semantic Caching và TextRank Summary."""
+        from apps.core.cache_utils import CacheManager
+        
+        sample_hash = "abc12345hash"
+        sample_summary = ["Khái niệm 1", "Khái niệm 2"]
+        sample_quiz = [
+            {'question': 'Câu hỏi mẫu?', 'options': ['A', 'B', 'C', 'D'], 'correct_answer': 0}
+        ]
+
+        # 1. Test Summary Cache
+        CacheManager.set_ai_summary(sample_hash, sample_summary)
+        cached_sum = CacheManager.get_ai_summary(sample_hash)
+        self.assertEqual(cached_sum, sample_summary)
+
+        # 2. Test Quiz Prompt Cache
+        CacheManager.set_ai_quiz(sample_hash, 10, 'remember', sample_quiz)
+        cached_q = CacheManager.get_ai_quiz(sample_hash, 10, 'remember')
+        self.assertEqual(cached_q, sample_quiz)
+
+
+

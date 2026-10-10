@@ -83,3 +83,50 @@ class CacheManager:
             logger.debug(f"Cache invalidated for user {user_id}")
         except Exception as e:
             logger.warning(f"Cache invalidation error: {e}")
+
+    # ========== AI SEMANTIC & PROMPT CACHING ==========
+    AI_SUMMARY_CACHE_TTL = 86400    # 24 giờ cho tóm tắt TextRank và phân đoạn Semantic
+    AI_QUIZ_CACHE_TTL = 86400       # 24 giờ cho bộ câu hỏi đã sinh từ cùng tài liệu
+
+    @staticmethod
+    def _ai_summary_key(text_hash: str) -> str:
+        return f"ai_summary:{text_hash}"
+
+    @staticmethod
+    def _ai_quiz_key(text_hash: str, num_questions: int, difficulty: str) -> str:
+        return f"ai_quiz:{text_hash}:{num_questions}:{difficulty}"
+
+    @classmethod
+    def get_ai_summary(cls, text_hash: str):
+        """Lấy tóm tắt TextRank đã cache theo hash văn bản"""
+        try:
+            return cache.get(cls._ai_summary_key(text_hash))
+        except Exception as e:
+            logger.warning(f"Cache read error (AI summary): {e}")
+            return None
+
+    @classmethod
+    def set_ai_summary(cls, text_hash: str, summary_sentences: list):
+        """Lưu tóm tắt TextRank vào cache với TTL 24h"""
+        try:
+            cache.set(cls._ai_summary_key(text_hash), summary_sentences, timeout=cls.AI_SUMMARY_CACHE_TTL)
+        except Exception as e:
+            logger.warning(f"Cache write error (AI summary): {e}")
+
+    @classmethod
+    def get_ai_quiz(cls, text_hash: str, num_questions: int, difficulty: str):
+        """Lấy câu hỏi AI đã sinh từ cache (Semantic / Prompt Caching)"""
+        try:
+            return cache.get(cls._ai_quiz_key(text_hash, num_questions, difficulty))
+        except Exception as e:
+            logger.warning(f"Cache read error (AI quiz): {e}")
+            return None
+
+    @classmethod
+    def set_ai_quiz(cls, text_hash: str, num_questions: int, difficulty: str, questions: list):
+        """Lưu câu hỏi AI đã sinh vào cache với TTL 24h"""
+        try:
+            cache.set(cls._ai_quiz_key(text_hash, num_questions, difficulty), questions, timeout=cls.AI_QUIZ_CACHE_TTL)
+        except Exception as e:
+            logger.warning(f"Cache write error (AI quiz): {e}")
+

@@ -52,3 +52,71 @@ class UserSecurityTests(TestCase):
         # Kiểm tra message khóa tạm thời
         messages = list(response.context['messages'])
         self.assertTrue(any('tạm khóa' in str(m) or 'quá nhiều lần' in str(m) for m in messages))
+
+    def test_forgot_password_and_reset_confirm_flow(self):
+        """Kiểm tra toàn bộ quy trình quên mật khẩu và đặt lại mật khẩu mới"""
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+
+        # 1. Gửi yêu cầu quên mật khẩu
+        forgot_url = reverse('users:forgot_password')
+        resp = self.client.post(forgot_url, {'email': 'test@example.com'})
+        self.assertEqual(resp.status_code, 302)  # Redirect về login kèm flash message
+
+        # 2. Tạo link confirm hợp lệ
+        uidb64 = urlsafe_base64_encode(force_bytes(self.existing_user.pk))
+        token = default_token_generator.make_token(self.existing_user)
+        confirm_url = reverse('users:reset_password_confirm', kwargs={'uidb64': uidb64, 'token': token})
+
+        # 3. GET trang confirm
+        resp_get = self.client.get(confirm_url)
+        self.assertEqual(resp_get.status_code, 200)
+
+        # 4. POST đặt mật khẩu mới
+        resp_post = self.client.post(confirm_url, {
+            'new_password1': 'NewBrandPassword888!',
+            'new_password2': 'NewBrandPassword888!'
+        })
+        self.assertEqual(resp_post.status_code, 302)
+
+        # 5. Đăng nhập thử với mật khẩu mới
+        login_resp = self.client.post(reverse('users:login'), {
+            'username': 'existinguser',
+            'password': 'NewBrandPassword888!'
+        })
+        self.assertEqual(login_resp.status_code, 302)
+
+    def test_google_login_account_linking_and_unusable_password(self):
+        """Kiểm tra Google OAuth: Tạo tài khoản mới với unusable password, và Account Linking với tài khoản cũ"""
+        # Case 1: Tạo tài khoản mới qua Google
+        resp = self.client.post(
+            reverse('users:google_login'),
+            data='{"email": "newbie@gmail.com", "name": "Newbie Google", "google_id": "12345"}',
+            content_type='application/json'
+        )
+        self.assertEqual(resp.status_code, 200)
+        self.assertJSONEqual(resp.content, {'status': 'success', 'redirect_url': reverse('core:dashboard')})
+
+        google_user = User.objects.get(email='newbie@gmail.com')
+        self.assertFalse(google_user.has_usable_password())
+
+        # Thử đăng nhập form thường bằng password ngẫu nhiên -> phải hiện cảnh báo tài khoản Google
+        self.client.logout()
+        login_resp = self.client.post(reverse('users:login'), {
+            'username': 'newbie',
+            'password': 'SomeRandomPassword!'
+        })
+        self.assertEqual(login_resp.status_code, 200)
+        msgs = list(login_resp.context['messages'])
+        self.assertTrue(any('Google' in str(m) for m in msgs))
+
+        # Case 2: Đăng nhập Google với email đã tồn tại (Account Linking)
+        resp_link = self.client.post(
+            reverse('users:google_login'),
+            data='{"email": "test@example.com", "name": "Existing User", "google_id": "67890"}',
+            content_type='application/json'
+        )
+        self.assertEqual(resp_link.status_code, 200)
+        self.assertEqual(int(self.client.session['_auth_user_id']), self.existing_user.id)
+

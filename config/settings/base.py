@@ -137,11 +137,19 @@ LOGOUT_REDIRECT_URL = 'users:login'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+# Cấu hình Gemini API Key Pool (Hỗ trợ danh sách đa Key dự phòng chống lỗi Quota 429)
+_raw_gemini_keys = os.environ.get('GEMINI_API_KEYS', '')
+if _raw_gemini_keys:
+    GEMINI_API_KEYS = [k.strip() for k in _raw_gemini_keys.split(',') if k.strip()]
+else:
+    _single_key = os.environ.get('GEMINI_API_KEY', '').strip()
+    GEMINI_API_KEYS = [_single_key] if _single_key else []
 
-if not GEMINI_API_KEY and DEBUG:
+GEMINI_API_KEY = GEMINI_API_KEYS[0] if GEMINI_API_KEYS else ''
+
+if not GEMINI_API_KEYS and DEBUG:
     import warnings
-    warnings.warn("GEMINI_API_KEY chưa được cấu hình trong file .env!")
+    warnings.warn("Chưa cấu hình GEMINI_API_KEY hoặc GEMINI_API_KEYS trong file .env!")
 
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 20971520
@@ -167,11 +175,23 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 CSRF_COOKIE_SAMESITE = 'Lax'
 
 # ===============================
-# CẤU HÌNH CELERY & REDIS
+# CẤU HÌNH CELERY & REDIS (PRIORITY QUEUES)
 # ===============================
 CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_DEFAULT_QUEUE = 'queue_high'
+
+# Phân tách hàng đợi ưu tiên:
+# - queue_high: Email xác thực, reset password, export tài liệu PDF/Word (phản hồi tức thì < 2s)
+# - queue_ai: Tác vụ gọi Google Gemini AI và xử lý OCR/Text nặng (30s - 3 phút)
+CELERY_TASK_ROUTES = {
+    'apps.quizzes.tasks.generate_quiz_task': {'queue': 'queue_ai'},
+    'apps.users.tasks.*': {'queue': 'queue_high'},
+    'apps.documents.tasks.*': {'queue': 'queue_high'},
+}
+
 
 # ===============================
 # CẤU HÌNH WEBSOCKETS (CHANNELS)
