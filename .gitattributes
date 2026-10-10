@@ -1,0 +1,22 @@
+# ==============================================================================
+# GitHub Linguist Configuration
+# Optimizing Language Statistics for Fluesy Exam (Python + TypeScript Dominant)
+# ==============================================================================
+
+# Mark Django Server-Side Rendered templates as vendored/markup
+templates/** linguist-vendored=true
+templates/**/*.html linguist-detectable=false
+
+# Explicitly enforce TypeScript detection for frontend modules
+frontend/src/**/*.ts linguist-detectable=true
+vite.config.ts linguist-detectable=true
+
+# Static compiled distribution
+static/dist/** linguist-vendored=true
+
+# Data science & AI benchmark notebooks
+notebooks/*.ipynb linguist-detectable=true
+
+# Python backend codebase
+apps/**/*.py linguist-detectable=true
+config/**/*.py linguist-detectable=true

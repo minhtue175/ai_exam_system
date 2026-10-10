@@ -4,7 +4,9 @@
 ### Hệ Thống Quản Lý Tài Liệu & Ôn Tập Luyện Thi Thông Minh Hỗ Trợ Bởi AI
 
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Django](https://img.shields.io/badge/Django-5.0+-092E20?style=for-the-badge&logo=django&logoColor=white)](https://www.djangoproject.com/)
+[![Vite](https://img.shields.io/badge/Vite-5.2+-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-7.4+-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![Celery](https://img.shields.io/badge/Celery-5.3+-37814A?style=for-the-badge&logo=celery&logoColor=white)](https://docs.celeryq.dev/)
@@ -142,7 +144,8 @@ Mở rộng thang đo độ khó câu hỏi thành 6 cấp độ tư duy sư ph�
 | **Realtime** | Django Channels, Daphne | Giao tiếp WebSockets hai chiều |
 | **AI Engine** | Google GenAI SDK (`gemini-2.5-flash`) | Mô hình AI sinh câu hỏi trắc nghiệm |
 | **Document Engine** | PyPDF2, python-docx, WeasyPrint | Bóc tách văn bản và xuất bản Word/PDF |
-| **Frontend** | Bootstrap 5, Bootstrap Icons, SweetAlert2 | Giao diện Responsive hiện đại |
+| **Frontend Core** | TypeScript 5.4, Vite 5.2, Bootstrap 5, Chart.js | Kiến trúc Frontend Modular Type-Safe hiện đại |
+| **Data Science & AI R&D** | Jupyter Notebook, Matplotlib, NumPy | Mô phỏng đường cong quên lãng & Benchmark AI |
 
 ---
 
@@ -159,14 +162,20 @@ ai_exam_system_demo/
 │   │   └── views.py           # Quiz & Spaced Repetition views
 │   ├── exports/               # Xuất bản Word (.docx) & PDF (.pdf) với Constrained Shuffling
 │   └── users/                 # Custom User Model, Authentication, Profile Aggregation
+├── frontend/                  # Modern TypeScript Frontend Codebase
+│   └── src/
+│       ├── modules/           # theme-manager, notification-socket, quiz-engine, leitner-system, analytics-chart, document-uploader
+│       ├── types/             # Domain TypeScript interfaces and types
+│       └── main.ts            # Frontend entrypoint
+├── notebooks/                 # Jupyter Notebooks nghiên cứu mô hình AI & Spaced Repetition
 ├── config/                    # Cấu hình dự án (settings, urls, asgi, wsgi, celery)
-├── static/                    # CSS, JavaScript, Static Assets
+├── static/                    # Static Assets & Compiled Frontend Bundle (dist/assets/main.js)
 ├── templates/                 # Giao diện HTML (Django Templates)
-│   ├── core/                  # dashboard.html, home.html
-│   ├── documents/             # upload.html, detail.html, list.html
-│   ├── quizzes/               # create.html, detail.html, quiz_take.html, spaced_repetition.html, review_session.html
-│   └── users/                 # login.html, register.html, profile.html
-├── requirements.txt           # Danh sách các gói thư viện
+├── package.json               # Cấu hình công cụ Node.js & Vite
+├── tsconfig.json              # Cấu hình TypeScript Strict Mode
+├── vite.config.ts             # Pipeline đóng gói Vite cho Django
+├── .gitattributes             # Cấu hình GitHub Linguist (Python & TypeScript Priority)
+├── requirements.txt           # Danh sách các gói thư viện Python
 └── manage.py                  # Django Management Script
 ```
 
