@@ -42,11 +42,31 @@
                 {% else %}
                     <span class="badge bg-info-subtle text-info px-3 py-2 rounded-pill">Đã tải lên</span>
                 {% endif %}
+            <div class="mb-3 d-flex justify-content-between align-items-center">
+                <span class="text-muted">Vòng đời lưu trữ:</span>
+                {% if document.is_expiring_soon %}
+                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" title="Tài liệu sẽ tự giải phóng sau {{ document.days_left }} ngày">
+                        <i class="bi bi-clock-history me-1"></i> Còn {{ document.days_left }} ngày
+                    </span>
+                {% else %}
+                    <span class="badge bg-light text-secondary px-3 py-2 rounded-pill">
+                        <i class="bi bi-shield-check me-1"></i> Còn {{ document.days_left }} ngày
+                    </span>
+                {% endif %}
             </div>
             <div class="mb-4 d-flex justify-content-between">
                 <span class="text-muted">Ngày tải lên:</span>
                 <span class="fs-6">{{ document.created_at|date:"d/m/Y H:i" }}</span>
             </div>
+
+            {% if document.is_expiring_soon %}
+                <div class="alert alert-warning border-0 shadow-sm p-3 rounded-3 mb-3 small d-flex align-items-start gap-2">
+                    <i class="bi bi-info-circle-fill text-warning fs-5"></i>
+                    <div>
+                        <strong>Lưu ý:</strong> Tài liệu sẽ tự giải phóng sau <strong>{{ document.days_left }} ngày</strong>. Hãy tải <em>Bản Text (.txt)</em> về máy để lưu trữ lâu dài!
+                    </div>
+                </div>
+            {% endif %}
 
             <hr class="my-4">
             <div class="d-grid gap-3">
@@ -62,9 +82,15 @@
                 {% endif %}
                 
                 <div class="d-flex flex-wrap gap-2">
-                    <a href="{% url 'documents:download' document.pk %}" class="btn btn-light fw-bold rounded-pill flex-grow-1 text-success shadow-sm">
-                        <i class="bi bi-download"></i> Tải về
+                    <a href="{% url 'documents:download' document.pk %}" class="btn btn-light fw-bold rounded-pill flex-grow-1 text-success shadow-sm" title="Tải file gốc">
+                        <i class="bi bi-file-earmark-arrow-down me-1"></i> File gốc
                     </a>
+
+                    {% if document.extracted_text %}
+                        <a href="{% url 'documents:download_text' document.pk %}" class="btn btn-light fw-bold rounded-pill flex-grow-1 text-primary shadow-sm" title="Tải bản text đã bóc tách (.txt UTF-8)">
+                            <i class="bi bi-filetype-txt me-1"></i> Bản Text (.txt)
+                        </a>
+                    {% endif %}
                     
                     <form action="{% url 'documents:extract' document.pk %}" method="POST" class="m-0 flex-grow-1">
                         {% csrf_token %}

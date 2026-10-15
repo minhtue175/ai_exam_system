@@ -96,6 +96,26 @@ def document_download_view(request, pk):
 
 
 @login_required
+def document_download_text_view(request, pk):
+    """Tải nội dung bóc tách dạng file .txt (UTF-8 BOM) để lưu trữ ngoại tuyến trước khi hết hạn"""
+    import urllib.parse
+    document = get_object_or_404(Document, pk=pk, user=request.user)
+    
+    if not document.extracted_text:
+        messages.error(request, "Tài liệu này chưa có nội dung văn bản bóc tách để tải về!")
+        return redirect('documents:detail', pk=pk)
+
+    # Thêm UTF-8 BOM (\ufeff) để khi mở bằng Notepad trên Windows không bị lỗi font tiếng Việt
+    content = '\ufeff' + document.extracted_text
+    response = HttpResponse(content.encode('utf-8'), content_type='text/plain; charset=utf-8')
+    
+    clean_name = os.path.splitext(document.filename)[0]
+    safe_name = urllib.parse.quote(f"TrichXuat_{clean_name}.txt")
+    response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{safe_name}'
+    return response
+
+
+@login_required
 def document_delete_view(request, pk):
     """Xóa tài liệu"""
     document = get_object_or_404(Document, pk=pk, user=request.user)
