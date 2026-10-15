@@ -412,3 +412,71 @@ def review_submit_answer(request):
         return JsonResponse({'success': True, 'result': result})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+def cognitive_analytics_api(request):
+    """API trả về phân tích Bloom's Taxonomy Mastery và Lỗ hổng kiến thức"""
+    from .services.analytics_service import CognitiveAnalyticsService
+    bloom_data = CognitiveAnalyticsService.analyze_bloom_mastery(request.user)
+    gaps = CognitiveAnalyticsService.detect_knowledge_gaps(request.user)
+    return JsonResponse({
+        'status': 'success',
+        'bloom_mastery': bloom_data,
+        'knowledge_gaps': gaps
+    })
+
+
+@login_required
+def retention_curve_api(request):
+    """API trả về dữ liệu mô hình hóa đường cong quên lãng Ebbinghaus"""
+    from .services.sm2_service import SuperMemo2Service
+    try:
+        stability = float(request.GET.get('stability', 7.0))
+        days = int(request.GET.get('days', 30))
+    except (ValueError, TypeError):
+        stability = 7.0
+        days = 30
+        
+    curve = SuperMemo2Service.calculate_ebbinghaus_retention_curve(stability_days=stability, days_range=days)
+    return JsonResponse({
+        'status': 'success',
+        'stability_days': stability,
+        'curve': curve
+    })
+
+
+@login_required
+def quiz_retake_wrong_view(request, pk, attempt_id):
+    """Chế độ thi lại thông minh: Chỉ làm lại những câu hỏi đã trả lời sai trong lần thi trước"""
+    quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
+    attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
+
+    # Tìm ra danh sách các câu hỏi bị sai
+    wrong_qids = [
+        item.get('question_id')
+        for item in (attempt.details or [])
+        if not item.get('is_correct', False) and item.get('question_id')
+    ]
+
+    if not wrong_qids:
+        messages.success(request, "🎉 Bạn đã làm đúng 100% tất cả các câu hỏi trong lần thi này, không có câu nào bị sai để ôn lại!")
+        return redirect('quizzes:result', attempt_id=attempt.id)
+
+    # Lấy các câu hỏi sai
+    questions = list(quiz.questions.filter(id__in=wrong_qids).values('id', 'question_text', 'options', 'correct_answer'))
+    
+    session_key = f'quiz_seed_{quiz.id}'
+    seed = random.randint(0, 2**32 - 1)
+    request.session[session_key] = seed
+    shuffled_questions = QuestionShuffler.shuffle_quiz(questions, seed=seed)
+
+    messages.info(request, f"🎯 Đã kích hoạt Chế độ Phục Thù: Làm lại {len(shuffled_questions)} câu hỏi bạn đã trả lời chưa chính xác!")
+
+    return render(request, 'quizzes/quiz_take.html', {
+        'quiz': quiz,
+        'questions': shuffled_questions,
+        'duration_seconds': 0,
+        'is_retake_wrong': True,
+        'original_attempt_id': attempt.id
+    })
