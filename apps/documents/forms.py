@@ -10,11 +10,11 @@ class DocumentUploadForm(forms.ModelForm):
         widgets = {
             'file_path': forms.FileInput(attrs={
                 'class': 'form-control',
-                'accept': '.pdf,.doc,.docx'
+                'accept': '.pdf,.doc,.docx,.txt'
             })
         }
         labels = {
-            'file_path': 'Chọn file (PDF hoặc Word)'
+            'file_path': 'Chọn file (PDF, Word hoặc Text .txt)'
         }
     
     def clean_file_path(self):

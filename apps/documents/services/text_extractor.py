@@ -85,6 +85,32 @@ class TextExtractor:
             logger.error(f"DOCX extraction error: {str(e)}")
             raise Exception(f"Không thể đọc file Word: {str(e)}")
     
+    @staticmethod
+    def extract_from_txt(file_path: str) -> str:
+        """
+        Extract text from plain text file (.txt) with robust encoding detection
+        
+        Args:
+            file_path: Path to TXT file
+            
+        Returns:
+            Extracted text as string
+        """
+        encodings = ['utf-8', 'utf-8-sig', 'utf-16', 'latin-1']
+        for enc in encodings:
+            try:
+                with open(file_path, 'r', encoding=enc) as f:
+                    text = f.read()
+                logger.info(f"Đã đọc file TXT thành công bằng encoding: {enc}")
+                return text.strip()
+            except UnicodeDecodeError:
+                continue
+            except Exception as e:
+                logger.error(f"Lỗi đọc file TXT: {e}")
+                raise Exception(f"Không thể đọc file TXT: {e}")
+
+        raise Exception("Không thể giải mã file TXT bằng các bảng mã phổ biến (UTF-8, UTF-16, Latin-1)!")
+
     @classmethod
     def extract(cls, file_path: str) -> Optional[str]:
         """
@@ -105,5 +131,7 @@ class TextExtractor:
             return cls.extract_from_pdf(str(path))
         elif extension in ['.docx', '.doc']:
             return cls.extract_from_docx(str(path))
+        elif extension == '.txt':
+            return cls.extract_from_txt(str(path))
         else:
-            raise ValueError(f"Định dạng không hỗ trợ: {extension}")
+            raise ValueError(f"Định dạng không hỗ trợ: {extension}")

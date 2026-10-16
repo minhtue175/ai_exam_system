@@ -9,11 +9,12 @@ import os
 class DocumentProcessor:
     """Process and validate document uploads"""
     
-    ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx']
+    ALLOWED_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt']
     ALLOWED_MIME_TYPES = [
         'application/pdf',
         'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'text/plain'
     ]
     MAX_FILE_SIZE = 20 * 1024 * 1024 
     
@@ -60,19 +61,24 @@ class DocumentProcessor:
                 f"File quá lớn! ({file_mb:.2f}MB). Tối đa: {max_mb:.0f}MB"
             )
         
-        # 4. Check Magic Bytes (Chữ ký thực tế của file - chống file giả dạng)
+        # 4. Check Magic Bytes (hoặc UTF-8 text integrity đối với file .txt)
         try:
             current_pos = file.tell()
-            header = file.read(8)
+            header = file.read(512)
             file.seek(current_pos)
             
-            expected_signatures = cls.MAGIC_SIGNATURES.get(file_ext, [])
-            valid_signature = any(header.startswith(sig) for sig in expected_signatures)
-            
-            if not valid_signature:
-                raise ValidationError(
-                    f"Nội dung file không đúng với định dạng {file_ext.upper()}. Vui lòng kiểm tra lại file của bạn!"
-                )
+            if file_ext == '.txt':
+                # Chống file nhị phân (binary/executable) giả danh .txt (không được chứa byte null)
+                if b'\x00' in header:
+                    raise ValidationError("File .TXT chứa dữ liệu nhị phân không hợp lệ!")
+            else:
+                expected_signatures = cls.MAGIC_SIGNATURES.get(file_ext, [])
+                valid_signature = any(header.startswith(sig) for sig in expected_signatures)
+                
+                if not valid_signature:
+                    raise ValidationError(
+                        f"Nội dung file không đúng với định dạng {file_ext.upper()}. Vui lòng kiểm tra lại file của bạn!"
+                    )
         except ValidationError:
             raise
         except Exception as e:
