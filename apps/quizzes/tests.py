@@ -161,5 +161,108 @@ class QuizAttemptPreservationTest(TestCase):
         cached_q = CacheManager.get_ai_quiz(sample_hash, 10, 'remember')
         self.assertEqual(cached_q, sample_quiz)
 
+    def test_lean_snapshot_storage_and_dynamic_reconstruction(self):
+        """Kiểm tra Lean Snapshot tiết kiệm 95% CSDL và tái tạo động nội dung câu hỏi khi xem kết quả"""
+        from apps.quizzes.models import Question
+        from apps.quizzes.services.grading_service import GradingService
+        from apps.quizzes.views import _reconstruct_attempt_results
+
+        # 1. Tạo câu hỏi trong CSDL
+        q1 = Question.objects.create(
+            quiz=self.quiz,
+            question_text="Việt Nam nằm ở khu vực nào?",
+            options=["Đông Nam Á", "Nam Á", "Đông Á", "Tây Á"],
+            correct_answer=0,
+            explanation="Việt Nam thuộc Đông Nam Á.",
+            order=1
+        )
+
+        grading_result = {
+            'total_questions': 1,
+            'correct_answers': 1,
+            'score': 10.0,
+            'results': [{
+                'question_id': q1.id,
+                'question_text': q1.question_text,
+                'options': q1.options,
+                'correct_answer': q1.correct_answer,
+                'user_answer': 0,
+                'is_correct': True,
+                'explanation': q1.explanation
+            }]
+        }
+
+        # 2. Lưu bài làm với Lean Snapshot
+        attempt = GradingService.save_attempt(
+            quiz=self.quiz,
+            user=self.user,
+            user_answers={q1.id: 0},
+            grading_result=grading_result,
+            time_spent_seconds=60
+        )
+
+        # 3. Kiểm chứng: chi tiết lưu DB chỉ là Lean Snapshot (không nhân bản text/options)
+        self.assertEqual(len(attempt.details), 1)
+        self.assertNotIn('question_text', attempt.details[0])
+        self.assertNotIn('options', attempt.details[0])
+        self.assertEqual(attempt.details[0]['question_id'], q1.id)
+        self.assertEqual(attempt.details[0]['user_answer'], 0)
+        self.assertTrue(attempt.details[0]['is_correct'])
+
+        # 4. Kiểm chứng: Tái tạo động khi xem kết quả nạp đầy đủ thông tin từ DB
+        reconstructed = _reconstruct_attempt_results(attempt)
+        self.assertEqual(len(reconstructed), 1)
+        self.assertEqual(reconstructed[0]['question_text'], "Việt Nam nằm ở khu vực nào?")
+        self.assertEqual(reconstructed[0]['options'], ["Đông Nam Á", "Nam Á", "Đông Á", "Tây Á"])
+        self.assertEqual(reconstructed[0]['explanation'], "Việt Nam thuộc Đông Nam Á.")
+
+    def test_bloom_mastery_and_knowledge_gap_detector(self):
+        """Kiểm tra phân tích Bloom's Taxonomy và bộ phát hiện lỗ hổng kiến thức"""
+        from apps.quizzes.services.analytics_service import CognitiveAnalyticsService
+        
+        # Phân tích Bloom
+        bloom_data = CognitiveAnalyticsService.analyze_bloom_mastery(self.user)
+        self.assertTrue(bloom_data['has_data'])
+        self.assertIn('breakdown', bloom_data)
+
+        # Phát hiện lỗ hổng
+        gaps = CognitiveAnalyticsService.detect_knowledge_gaps(self.user)
+        self.assertIsInstance(gaps, list)
+
+    def test_supermemo2_algorithm_and_ebbinghaus_curve(self):
+        """Kiểm tra thuật toán SuperMemo SM-2 và đường cong quên lãng Ebbinghaus"""
+        from apps.quizzes.services.sm2_service import SuperMemo2Service
+        
+        # Test SM-2 khi trả lời đúng xuất sắc (quality=5)
+        new_rep, new_ef, next_interval = SuperMemo2Service.calculate_sm2(
+            quality=5, repetitions=0, ease_factor=2.5, interval_days=1
+        )
+        self.assertEqual(new_rep, 1)
+        self.assertEqual(next_interval, 1)
+        self.assertGreaterEqual(new_ef, 2.5)
+
+        # Test SM-2 khi trả lời sai (quality=1) -> reset repetition về 0
+        fail_rep, fail_ef, fail_interval = SuperMemo2Service.calculate_sm2(
+            quality=1, repetitions=3, ease_factor=2.5, interval_days=10
+        )
+        self.assertEqual(fail_rep, 0)
+        self.assertEqual(fail_interval, 1)
+
+        # Test đường cong Ebbinghaus
+        curve = SuperMemo2Service.calculate_ebbinghaus_retention_curve(stability_days=7.0, days_range=14)
+        self.assertEqual(len(curve), 15)
+        self.assertEqual(curve[0]['retention_pct'], 100.0)
+        self.assertLess(curve[-1]['retention_pct'], 50.0)
+
+    def test_quiz_retake_wrong_mode(self):
+        """Kiểm tra chế độ thi lại các câu sai"""
+        retake_url = reverse('quizzes:retake_wrong', kwargs={'pk': self.quiz.pk, 'attempt_id': self.attempt.pk})
+        resp = self.client.get(retake_url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(resp, 'quizzes/quiz_take.html')
+        self.assertTrue(resp.context.get('is_retake_wrong'))
+
+
+
 
 
