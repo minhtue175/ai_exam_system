@@ -8,21 +8,54 @@
         @page {
             size: A4;
             margin: 2cm 2cm 2cm 2.5cm; /* Lề trái 2.5cm để bấm lỗ/ghim */
+            @bottom-right {
+                content: "Trang " counter(page) " / " counter(pages);
+                font-family: "Times New Roman", Times, serif;
+                font-size: 10pt;
+                font-style: italic;
+            }
         }
         body {
             font-family: "Times New Roman", Times, serif;
-            font-size: 14pt;
+            font-size: 13pt;
             line-height: 1.5;
             color: #000;
+            position: relative;
+        }
+        /* Watermark bản quyền chìm xoay góc 45 độ */
+        .watermark {
+            position: fixed;
+            top: 35%;
+            left: 10%;
+            width: 80%;
+            text-align: center;
+            font-size: 48pt;
+            font-weight: bold;
+            color: rgba(180, 180, 200, 0.18);
+            transform: rotate(-35deg);
+            z-index: -1000;
+            text-transform: uppercase;
+            pointer-events: none;
+            letter-spacing: 4px;
+        }
+        .exam-header-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        .exam-header-table td {
+            vertical-align: top;
+            padding: 4px;
         }
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         .header h1 {
-            font-size: 18pt;
+            font-size: 17pt;
             text-transform: uppercase;
-            margin: 0 0 10px 0;
+            margin: 0 0 8px 0;
+            letter-spacing: 0.5px;
         }
         .subtitle {
             font-size: 14pt;
@@ -62,6 +95,25 @@
     </style>
 </head>
 <body>
+    <!-- Watermark bản quyền chìm chống sao chép trái phép -->
+    <div class="watermark">FLUESY EXAM AI</div>
+
+    <!-- Header bài thi chuẩn giáo dục -->
+    <table class="exam-header-table">
+        <tr>
+            <td style="width: 50%; text-align: center;">
+                <div style="font-size: 10.5pt; text-transform: uppercase; font-weight: bold;">HỆ THỐNG KHẢO THÍ FLUESY</div>
+                <div style="font-size: 10pt; font-weight: bold; text-decoration: underline;">NGÂN HÀNG ĐỀ THI AI</div>
+                <div style="font-size: 9.5pt; margin-top: 4px; font-style: italic;">Mã đề thi: FL-{{ questions|length }}Q</div>
+            </td>
+            <td style="width: 50%; text-align: center;">
+                <div style="font-size: 10.5pt; font-weight: bold; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div style="font-size: 10pt; font-weight: bold; text-decoration: underline;">Độc lập - Tự do - Hạnh phúc</div>
+                <div style="font-size: 9.5pt; margin-top: 4px; font-style: italic;">Thời gian làm bài: 45 phút (không kể phát đề)</div>
+            </td>
+        </tr>
+    </table>
+
     <div class="header">
         <h1>ĐỀ THI: {{ title }}</h1>
         {% if mode == 'teacher' %}
