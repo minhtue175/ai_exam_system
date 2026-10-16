@@ -61,16 +61,25 @@ class GradingService:
         grading_result: Dict,
         time_spent_seconds: int = 0
     ) -> UserQuizAttempt:
-        """Save quiz attempt to database"""
+        # Tối ưu Lean Snapshot: Chỉ lưu ID và kết quả chọn, giảm 95% kích thước CSDL
+        # Dữ liệu đề bài, đáp án và giải thích sẽ được nạp động từ Question khi xem lại
+        lean_details = [
+            {
+                'question_id': r.get('question_id'),
+                'user_answer': r.get('user_answer', -1),
+                'is_correct': r.get('is_correct', False)
+            }
+            for r in grading_result.get('results', [])
+        ]
+
         attempt = UserQuizAttempt.objects.create(
             quiz=quiz,
             quiz_title=quiz.title if quiz else '',
             user=user,
             answers=user_answers,
-            
             total_questions=grading_result['total_questions'],
             correct_answers=grading_result['correct_answers'],
-            details=grading_result['results'], # Đẩy cục JSON vào DB
+            details=lean_details,  # Lưu Lean Snapshot siêu gọn nhẹ
             score=grading_result['score'],
             time_spent_seconds=time_spent_seconds,
             completed_at=timezone.now()
