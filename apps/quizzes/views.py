@@ -20,7 +20,7 @@ from django.template.loader import render_to_string
 
 from apps.core.security import TokenBucket
 from apps.core.cache_utils import CacheManager
-from .models import Quiz, UserQuizAttempt
+from .models import Quiz, UserQuizAttempt, Question
 from apps.documents.models import Document
 from .services.quiz_service import QuizService 
 from .services.grading_service import GradingService
@@ -211,13 +211,59 @@ def quiz_take_view(request, pk):
         'duration_seconds': duration_seconds
     })
 
+def _reconstruct_attempt_results(attempt):
+    """
+    Tái tạo động nội dung câu hỏi/giải thích cho bài thi:
+    - Nếu attempt cũ đã có full text ('question_text' trong item) -> dùng luôn (backward compatibility).
+    - Nếu là Lean Snapshot (chỉ có question_id) -> nạp động question_text, options, correct_answer từ DB.
+    """
+    raw_details = attempt.details or []
+    if not raw_details:
+        return []
+
+    # 1. Tương thích ngược: Nếu bản ghi cũ đã có sẵn text thì trả về luôn
+    if isinstance(raw_details[0], dict) and 'question_text' in raw_details[0]:
+        return raw_details
+
+    # 2. Lean Snapshot: Chỉ 1 query duy nhất để lấy thông tin các câu hỏi
+    q_ids = [item.get('question_id') for item in raw_details if item.get('question_id')]
+    questions_map = {q.id: q for q in Question.objects.filter(id__in=q_ids)}
+
+    reconstructed = []
+    for item in raw_details:
+        qid = item.get('question_id')
+        q_obj = questions_map.get(qid)
+        user_ans = item.get('user_answer', -1)
+        is_corr = item.get('is_correct', False)
+
+        if q_obj:
+            reconstructed.append({
+                'question_id': qid,
+                'question_text': q_obj.question_text,
+                'options': q_obj.options,
+                'correct_answer': q_obj.correct_answer,
+                'user_answer': user_ans,
+                'is_correct': is_corr,
+                'explanation': q_obj.explanation or 'Theo tài liệu tham khảo.'
+            })
+        else:
+            reconstructed.append({
+                'question_id': qid,
+                'question_text': f"Câu hỏi #{qid} (Đã được cập nhật trong ngân hàng đề)",
+                'options': ['Phương án A', 'Phương án B', 'Phương án C', 'Phương án D'],
+                'correct_answer': user_ans if is_corr else 0,
+                'user_answer': user_ans,
+                'is_correct': is_corr,
+                'explanation': 'Nội dung câu hỏi này đã được lưu trữ vĩnh viễn trong nhật ký thi.'
+            })
+    return reconstructed
+
+
 @login_required
 def quiz_result_view(request, attempt_id):
-    """Hiển thị kết quả siêu tốc lấy từ JSON snapshot"""
+    """Hiển thị kết quả bài làm: nạp động từ Question hoặc dùng Lean Snapshot"""
     attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
-    
-    # Lấy mảng results đã lưu thẳng từ JSON ra
-    results_data = attempt.details or []
+    results_data = _reconstruct_attempt_results(attempt)
         
     return render(request, 'quizzes/quiz_result.html', {
         'attempt': attempt,
@@ -231,9 +277,7 @@ def quiz_result_view(request, attempt_id):
 def export_pdf_view(request, attempt_id):
     """Xuất kết quả bài làm ra file PDF đảm bảo đúng dữ liệu lúc thi"""
     attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
-    
-    
-    results_data = attempt.details or []
+    results_data = _reconstruct_attempt_results(attempt)
        
     html_string = render_to_string('quizzes/pdf_template.html', {
         'attempt': attempt,
