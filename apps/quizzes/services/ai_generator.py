@@ -306,6 +306,12 @@ Văn phong của bạn tự nhiên, mạch lạc, đi thẳng vào trọng tâm.
         if difficulty not in valid_difficulties:
             difficulty = 'remember'
 
+        # 🛡️ Khử độc Prompt Injection trong tài liệu trước khi xử lý
+        from .prompt_guard import PromptGuard
+        text_content, was_injected = PromptGuard.sanitize(text_content)
+        if was_injected:
+            logger.warning("Phát hiện và vô hiệu hóa Prompt Injection trong tài liệu người dùng tải lên.")
+
         # Tính toán mã băm SHA256 đại diện cho văn bản
         text_hash = hashlib.sha256(text_content.encode('utf-8')).hexdigest()[:16]
 
