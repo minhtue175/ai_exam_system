@@ -99,3 +99,74 @@ def dashboard_view(request):
         'recent_attempts': recent_attempts,
     }
     return render(request, 'core/dashboard.html', context)
+
+
+def health_check_view(request):
+    """
+    Healthcheck & Readiness Probe API (/api/health/):
+    Kiểm tra trạng thái sẵn sàng của các thành phần hạ tầng:
+    1. Database (PostgreSQL)
+    2. Redis Cache & Broker
+    3. Gemini AI Key Pool
+    """
+    from django.db import connection
+    from django.core.cache import cache
+    from django.conf import settings
+    from django.http import JsonResponse
+    from django.utils import timezone
+    import time
+
+    health_status = {
+        'status': 'healthy',
+        'timestamp': timezone.now().isoformat(),
+        'services': {}
+    }
+    is_healthy = True
+
+    # 1. Kiểm tra Database
+    db_start = time.time()
+    try:
+        connection.ensure_connection()
+        db_ms = round((time.time() - db_start) * 1000, 2)
+        health_status['services']['database'] = {
+            'status': 'up',
+            'latency_ms': db_ms
+        }
+    except Exception as e:
+        is_healthy = False
+        health_status['services']['database'] = {
+            'status': 'down',
+            'error': str(e)
+        }
+
+    # 2. Kiểm tra Redis Cache
+    cache_start = time.time()
+    try:
+        test_key = "healthcheck_ping"
+        cache.set(test_key, "pong", timeout=10)
+        cache_val = cache.get(test_key)
+        cache_ms = round((time.time() - cache_start) * 1000, 2)
+        if cache_val == "pong":
+            health_status['services']['cache_redis'] = {
+                'status': 'up',
+                'latency_ms': cache_ms
+            }
+        else:
+            raise Exception("Cache read/write verification failed")
+    except Exception as e:
+        is_healthy = False
+        health_status['services']['cache_redis'] = {
+            'status': 'down',
+            'error': str(e)
+        }
+
+    # 3. Kiểm tra Gemini Key Pool
+    keys_configured = getattr(settings, 'GEMINI_API_KEYS', [])
+    health_status['services']['gemini_ai_pool'] = {
+        'status': 'ready' if keys_configured else 'warning',
+        'configured_keys_count': len(keys_configured)
+    }
+
+    status_code = 200 if is_healthy else 503
+    health_status['status'] = 'healthy' if is_healthy else 'degraded'
+    return JsonResponse(health_status, status=status_code)
