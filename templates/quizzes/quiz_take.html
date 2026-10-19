@@ -22,6 +22,12 @@
                             <span id="timerLabel" class="small text-muted d-none d-sm-inline">{% if duration_seconds > 0 %}Còn lại:{% else %}Thời gian:{% endif %}</span>
                             <span id="timerDisplay" class="fs-6 font-monospace fw-bold text-primary">--:--</span>
                         </div>
+
+                        <!-- Review Flagged Bookmark Indicator (Web ôn tập tự học) -->
+                        <button type="button" id="reviewFlaggedBtn" class="btn btn-sm btn-light rounded-pill px-3 py-1 shadow-sm fw-bold d-none align-items-center gap-1 text-warning border-0" title="Bấm để cuộn nhanh qua các câu hỏi đã đánh dấu">
+                            <i class="bi bi-bookmark-fill text-warning"></i>
+                            <span class="text-dark small"><span id="flaggedCountBadge">0</span> câu phân vân</span>
+                        </button>
                         
                         <span class="badge bg-white text-dark rounded-pill fs-6 px-3 py-2 shadow-sm">{{ quiz.num_questions }} Câu</span>
                     </div>
@@ -33,10 +39,18 @@
                 <input type="hidden" name="time_spent_seconds" id="timeSpentInput" value="0">
                 
                 {% for question in questions %}
-                <div class="card-custom p-4 mb-4" id="q-container-{{ question.id }}">
-                    <h5 class="fw-bold mb-4 lh-base" style="color: var(--text-main);">
-                        <span style="color: var(--primary-color);">Câu {{ forloop.counter }}:</span> {{ question.question_text }}
-                    </h5>
+                <div class="card-custom p-4 mb-4 question-card position-relative transition-all" id="q-container-{{ question.id }}" data-question-id="{{ question.id }}">
+                    <div class="d-flex justify-content-between align-items-start mb-4 gap-2">
+                        <h5 class="fw-bold mb-0 lh-base flex-grow-1" style="color: var(--text-main);">
+                            <span style="color: var(--primary-color);">Câu {{ forloop.counter }}:</span> {{ question.question_text }}
+                        </h5>
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 flag-btn text-nowrap d-flex align-items-center gap-1 flex-shrink-0" 
+                                data-q-id="{{ question.id }}" 
+                                title="Đánh dấu câu hỏi này để xem lại trước khi nộp bài">
+                            <i class="bi bi-bookmark flag-icon"></i>
+                            <span class="flag-text small fw-semibold">Đánh dấu</span>
+                        </button>
+                    </div>
                     
                     <div class="ps-md-2">
                         {% for option in question.options %}
@@ -88,6 +102,15 @@
     .custom-radio:has(input:checked) {
         background-color: var(--primary-light) !important;
         border-color: var(--primary-color) !important;
+    }
+    .question-card.is-flagged {
+        border-left: 5px solid #ffc107 !important;
+        box-shadow: 0 4px 18px rgba(255, 193, 7, 0.16) !important;
+    }
+    .question-card.is-flagged .flag-btn {
+        background-color: #fff9e6 !important;
+        border-color: #ffc107 !important;
+        color: #b78103 !important;
     }
     @keyframes pulseDanger {
         0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7); }
@@ -176,11 +199,138 @@
         updateTimer();
         const timerInterval = setInterval(updateTimer, 1000);
 
+        // 💾 BẢN NHÁP TỰ ĐỘNG (AUTO-SAVE DRAFT - CHỐNG MẤT BÀI KHI RỚT MẠNG)
+        const draftKey = `fluesy_quiz_draft_{{ quiz.id }}`;
+        try {
+            const savedDraft = JSON.parse(localStorage.getItem(draftKey) || '{}');
+            const restoredCount = Object.keys(savedDraft).length;
+            if (restoredCount > 0) {
+                Object.entries(savedDraft).forEach(([name, val]) => {
+                    const input = document.querySelector(`input[name="${name}"][value="${val}"]`);
+                    if (input) input.checked = true;
+                });
+                // Thông báo khôi phục thành công
+                const toastDiv = document.createElement('div');
+                toastDiv.className = 'alert alert-info shadow-sm rounded-pill px-4 py-2 position-fixed bottom-0 start-50 translate-middle-x mb-4 z-3 text-center';
+                toastDiv.innerHTML = `<i class="bi bi-cloud-check-fill me-2"></i> Đã tự động khôi phục <strong>${restoredCount}</strong> câu trả lời từ bản nháp!`;
+                document.body.appendChild(toastDiv);
+                setTimeout(() => toastDiv.remove(), 4000);
+            }
+        } catch (e) {
+            console.warn("Không thể khôi phục bản nháp:", e);
+        }
+
+        // Tự động lưu mỗi khi người dùng chọn đáp án
+        quizForm.addEventListener('change', (e) => {
+            if (e.target.matches('input[type="radio"]')) {
+                const formData = new FormData(quizForm);
+                const answers = {};
+                for (const [key, val] of formData.entries()) {
+                    if (key.startsWith('question_')) answers[key] = val;
+                }
+                localStorage.setItem(draftKey, JSON.stringify(answers));
+            }
+        });
+
+        // 📌 HỆ THỐNG GHI NHỚ / ĐÁNH DẤU CÂU HỎI PHÂN VÂN (QUESTION BOOKMARKING CHO ÔN TẬP TỰ HỌC)
+        const flagKey = `fluesy_quiz_flagged_{{ quiz.id }}`;
+        let flaggedQuestions = new Set(JSON.parse(localStorage.getItem(flagKey) || '[]'));
+        const reviewFlaggedBtn = document.getElementById('reviewFlaggedBtn');
+        const flaggedCountBadge = document.getElementById('flaggedCountBadge');
+
+        function updateFlaggedUI() {
+            if (flaggedCountBadge) flaggedCountBadge.textContent = flaggedQuestions.size;
+            if (reviewFlaggedBtn) {
+                if (flaggedQuestions.size > 0) {
+                    reviewFlaggedBtn.classList.remove('d-none');
+                    reviewFlaggedBtn.classList.add('d-flex');
+                } else {
+                    reviewFlaggedBtn.classList.add('d-none');
+                    reviewFlaggedBtn.classList.remove('d-flex');
+                }
+            }
+        }
+
+        // Khôi phục trạng thái đánh dấu đã lưu từ localStorage
+        flaggedQuestions.forEach(qId => {
+            const card = document.getElementById(`q-container-${qId}`);
+            if (card) {
+                card.classList.add('is-flagged');
+                const btn = card.querySelector('.flag-btn');
+                if (btn) {
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-warning');
+                    const icon = btn.querySelector('.flag-icon');
+                    if (icon) icon.className = 'bi bi-bookmark-fill flag-icon';
+                    const text = btn.querySelector('.flag-text');
+                    if (text) text.textContent = 'Đã ghim';
+                }
+            }
+        });
+        updateFlaggedUI();
+
+        // Xử lý sự kiện click nút Bookmark trên từng câu hỏi
+        document.querySelectorAll('.flag-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                const qId = btn.getAttribute('data-q-id');
+                const card = document.getElementById(`q-container-${qId}`);
+                const icon = btn.querySelector('.flag-icon');
+                const text = btn.querySelector('.flag-text');
+
+                if (flaggedQuestions.has(qId)) {
+                    flaggedQuestions.delete(qId);
+                    if (card) card.classList.remove('is-flagged');
+                    btn.classList.remove('btn-warning');
+                    btn.classList.add('btn-outline-secondary');
+                    if (icon) icon.className = 'bi bi-bookmark flag-icon';
+                    if (text) text.textContent = 'Đánh dấu';
+                } else {
+                    flaggedQuestions.add(qId);
+                    if (card) card.classList.add('is-flagged');
+                    btn.classList.remove('btn-outline-secondary');
+                    btn.classList.add('btn-warning');
+                    if (icon) icon.className = 'bi bi-bookmark-fill flag-icon';
+                    if (text) text.textContent = 'Đã ghim';
+                }
+                localStorage.setItem(flagKey, JSON.stringify(Array.from(flaggedQuestions)));
+                updateFlaggedUI();
+            });
+        });
+
+        // Click nút "Xem lại câu phân vân" trên thanh tiêu đề ghim để cuộn nhanh
+        let currentFlaggedIndex = -1;
+        if (reviewFlaggedBtn) {
+            reviewFlaggedBtn.addEventListener('click', () => {
+                const flaggedArray = Array.from(flaggedQuestions);
+                if (flaggedArray.length === 0) return;
+                currentFlaggedIndex = (currentFlaggedIndex + 1) % flaggedArray.length;
+                const targetQId = flaggedArray[currentFlaggedIndex];
+                const targetCard = document.getElementById(`q-container-${targetQId}`);
+                if (targetCard) {
+                    targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    targetCard.style.transition = 'box-shadow 0.3s ease';
+                    targetCard.style.boxShadow = '0 0 0 4px rgba(255, 193, 7, 0.7)';
+                    setTimeout(() => {
+                        targetCard.style.boxShadow = '';
+                    }, 1400);
+                }
+            });
+        }
+
+        // Xóa bản nháp và cờ khi nộp bài
+        quizForm.addEventListener('submit', () => {
+            localStorage.removeItem(draftKey);
+            localStorage.removeItem(flagKey);
+        });
+
         // Nút nộp bài thủ công
         const realSubmitBtn = document.getElementById('realSubmitBtn');
         if (realSubmitBtn) {
             realSubmitBtn.addEventListener('click', function() {
                 clearInterval(timerInterval);
+                localStorage.removeItem(draftKey);
+                localStorage.removeItem(flagKey);
                 timeSpentInput.value = Math.max(1, Math.floor((Date.now() - startTime) / 1000));
                 this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Đang chấm điểm...';
                 this.classList.add('disabled');
