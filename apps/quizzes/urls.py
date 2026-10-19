@@ -19,4 +19,5 @@ urlpatterns = [
     path('spaced-repetition/mode/', views.switch_review_mode_view, name='switch_review_mode'),
     path('analytics/cognitive/', views.cognitive_analytics_api, name='cognitive_analytics'),
     path('analytics/retention-curve/', views.retention_curve_api, name='retention_curve'),
+    path('<int:pk>/draft/', views.quiz_draft_api, name='draft_api'),
 ]

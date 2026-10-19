@@ -479,4 +479,27 @@ def quiz_retake_wrong_view(request, pk, attempt_id):
         'duration_seconds': 0,
         'is_retake_wrong': True,
         'original_attempt_id': attempt.id
-    })
+    })
+
+
+@login_required
+def quiz_draft_api(request, pk):
+    """Lưu và đồng bộ bản nháp câu trả lời làm bài thi trắc nghiệm (Auto-Save Draft API)"""
+    from django.core.cache import cache
+    quiz = get_object_or_404(Quiz, pk=pk, user=request.user)
+    cache_key = f"quiz_draft_{request.user.id}_{quiz.id}"
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            answers = data.get('answers', {})
+            # Lưu draft vào cache trong 24 giờ
+            cache.set(cache_key, answers, timeout=86400)
+            return JsonResponse({'status': 'ok', 'saved_count': len(answers)})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+            
+    # GET: lấy bản nháp hiện tại
+    saved_draft = cache.get(cache_key, {})
+    return JsonResponse({'status': 'ok', 'draft': saved_draft})
+
