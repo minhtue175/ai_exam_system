@@ -58,3 +58,25 @@ def export_pdf_view(request, quiz_id):
     
     response['Content-Disposition'] = f'attachment; filename*=UTF-8\'\'{filename}'
     return response
+
+
+@login_required
+def export_certificate_view(request, attempt_id):
+    """Xuất chứng chỉ hoàn thành bài thi (cho học viên đạt điểm >= 8.0)"""
+    from apps.quizzes.models import UserQuizAttempt
+    from .services.certificate_service import CertificateService
+    from django.contrib import messages
+    from django.shortcuts import redirect
+
+    attempt = get_object_or_404(UserQuizAttempt, id=attempt_id, user=request.user)
+
+    if attempt.score < 8.0:
+        messages.warning(request, "Chứng chỉ vinh danh chỉ cấp cho các bài thi đạt từ 8.0 điểm trở lên!")
+        return redirect('quizzes:result', attempt_id=attempt.id)
+
+    pdf_buffer = CertificateService.generate_certificate_pdf(attempt)
+    response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+    
+    filename = f"ChungChi_{attempt.id}_{request.user.username}.pdf"
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

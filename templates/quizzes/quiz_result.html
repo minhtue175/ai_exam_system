@@ -54,6 +54,10 @@
                 <a href="{% url 'quizzes:take' attempt.quiz.pk %}" class="btn btn-success me-2 shadow-sm">
                     <i class="bi bi-arrow-repeat"></i> Thi lại cả đề
                 </a>
+            {% if attempt.score >= 8.0 %}
+            <a href="{% url 'exports:export_certificate' attempt.id %}" class="btn btn-warning me-2 shadow-sm fw-bold text-dark" title="Tải Giấy chứng nhận hoàn thành xuất sắc">
+                <i class="bi bi-award-fill text-danger me-1"></i> Nhận Chứng Chỉ
+            </a>
             {% endif %}
             <a href="{% url 'quizzes:export_pdf' attempt.id %}" class="btn btn-danger me-2 shadow-sm">
                 <i class="bi bi-file-earmark-pdf-fill"></i> Tải PDF
