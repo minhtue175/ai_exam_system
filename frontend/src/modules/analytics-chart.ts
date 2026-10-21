@@ -184,6 +184,99 @@ export class AnalyticsChartEngine {
       },
     });
   }
+
+  /**
+   * Khởi tạo Biểu đồ Radar 6 Chiều Tư Duy Bloom's Taxonomy
+   */
+  public renderBloomRadarChart(
+    canvasId: string,
+    bloomData: Record<string, { label: string; accuracy_pct: number }>
+  ): void {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+    if (!canvas || typeof Chart === 'undefined') return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const currentTheme = themeManager.getSavedTheme();
+    const isDark = currentTheme === 'dark';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)';
+    const textColor = isDark ? '#e2e8f0' : '#334155';
+
+    const labels = Object.values(bloomData).map((d) => d.label);
+    const dataPoints = Object.values(bloomData).map((d) => d.accuracy_pct);
+
+    new Chart(ctx, {
+      type: 'radar',
+      data: {
+        labels: labels.length > 0 ? labels : ['Nhớ', 'Hiểu', 'Vận dụng', 'Phân tích', 'Đánh giá', 'Sáng tạo'],
+        datasets: [
+          {
+            label: 'Độ chuẩn xác (%)',
+            data: dataPoints.length > 0 ? dataPoints : [80, 75, 60, 50, 45, 30],
+            borderColor: '#6a35ff',
+            backgroundColor: 'rgba(106, 53, 255, 0.25)',
+            pointBackgroundColor: '#6a35ff',
+            borderWidth: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          r: {
+            min: 0,
+            max: 100,
+            grid: { color: gridColor },
+            pointLabels: { color: textColor, font: { size: 12, weight: 'bold' } },
+            ticks: { stepSize: 25, backdropColor: 'transparent', color: textColor },
+          },
+        },
+      },
+    });
+  }
+
+  /**
+   * Khởi tạo Biểu đồ Đường cong Quên lãng Ebbinghaus (Memory Retention Curve)
+   */
+  public renderEbbinghausCurveChart(
+    canvasId: string,
+    curvePoints: Array<{ day: number; retention_pct: number }>
+  ): void {
+    const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+    if (!canvas || typeof Chart === 'undefined') return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const isDark = themeManager.getSavedTheme() === 'dark';
+    const labels = curvePoints.map((p) => `Ngày ${p.day}`);
+    const dataValues = curvePoints.map((p) => p.retention_pct);
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Tỷ lệ ghi nhớ R(t) %',
+            data: dataValues,
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+            borderWidth: 2.5,
+            fill: true,
+            tension: 0.35,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: { min: 0, max: 100, ticks: { callback: (val: unknown) => `${val}%` } },
+        },
+      },
+    });
+  }
 }
 
 export const analyticsChartEngine = AnalyticsChartEngine.getInstance();
