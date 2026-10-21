@@ -14,6 +14,26 @@ class QuizService:
     
     def __init__(self):
         self.ai_generator = GeminiQuizGenerator()
+
+    @staticmethod
+    def detect_subject_and_tags(filename: str, text: str) -> tuple[str, str]:
+        """Tự động phân loại môn học và sinh tags dựa trên từ khóa"""
+        name_lower = (filename + " " + (text[:1000] if text else "")).lower()
+        if any(w in name_lower for w in ['lịch sử', 'chiến dịch', 'cách mạng', 'kháng chiến', 'thế chiến']):
+            return 'Lịch Sử', 'lịch sử, kháng chiến, sự kiện'
+        elif any(w in name_lower for w in ['toán', 'đạo hàm', 'tích phân', 'hình học', 'ma trận', 'đại số']):
+            return 'Toán Học', 'toán học, công thức, bài tập'
+        elif any(w in name_lower for w in ['vật lý', 'dao động', 'sóng cơ', 'quang học', 'điện xoay chiều']):
+            return 'Vật Lý', 'vật lý, thí nghiệm, định luật'
+        elif any(w in name_lower for w in ['hóa học', 'nguyên tử', 'phản ứng', 'axit', 'hữu cơ', 'vô cơ']):
+            return 'Hóa Học', 'hóa học, phản ứng, liên kết'
+        elif any(w in name_lower for w in ['tiếng anh', 'english', 'grammar', 'vocabulary', 'tense', 'reading']):
+            return 'Tiếng Anh', 'tiếng anh, ngữ pháp, từ vựng'
+        elif any(w in name_lower for w in ['sinh học', 'di truyền', 'tế bào', 'adn', 'sinh thái']):
+            return 'Sinh Học', 'sinh học, tiến hóa, sinh thái'
+        elif any(w in name_lower for w in ['python', 'java', 'lập trình', 'cơ sở dữ liệu', 'thuật toán', 'sql']):
+            return 'Công Nghệ Thông Tin', 'công nghệ, lập trình, phần mềm'
+        return 'Kiến Thức Chung', 'ôn tập, trắc nghiệm, tổng hợp'
     
     def create_quiz_from_document(
         self,
@@ -52,6 +72,9 @@ class QuizService:
                 difficulty=difficulty
             )
             
+            # Phân loại môn học và gắn thẻ chuyên môn tự động
+            subject, tags = self.detect_subject_and_tags(document.filename, document.extracted_text)
+
             # Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
             with transaction.atomic():
                 # Create Quiz
@@ -60,7 +83,9 @@ class QuizService:
                     user=user,
                     title=f"Quiz: {document.filename}",
                     num_questions=len(questions_data),
-                    difficulty=difficulty
+                    difficulty=difficulty,
+                    subject=subject,
+                    tags=tags
                 )
                 
             

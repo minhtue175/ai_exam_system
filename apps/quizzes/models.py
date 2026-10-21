@@ -41,6 +41,18 @@ class Quiz(TimeStampedModel):
         default=15,
         help_text="Thời gian làm bài tính theo phút (0 = không giới hạn)"
     )
+    subject = models.CharField(
+        max_length=100,
+        default='Tổng hợp',
+        blank=True,
+        help_text="Môn học / Lĩnh vực tri thức được phân loại"
+    )
+    tags = models.CharField(
+        max_length=255,
+        default='',
+        blank=True,
+        help_text="Các thẻ chuyên môn phân cách bằng dấu phẩy"
+    )
     
     class Meta:
         db_table = 'quizzes'
