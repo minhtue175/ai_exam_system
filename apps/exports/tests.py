@@ -62,3 +62,35 @@ class ExportSecurityTests(TestCase):
         resp_word = self.client.get(url_word)
         self.assertEqual(resp_word.status_code, 200)
         self.assertIn('attachment', resp_word['Content-Disposition'])
+
+    def test_export_certificate_eligibility_and_download(self):
+        """Chỉ cho phép tải chứng chỉ hoàn thành khi bài thi đạt điểm từ 8.0 trở lên"""
+        from apps.quizzes.models import UserQuizAttempt
+        self.client.login(username='usera', password='Password123!')
+
+        # 1. Bài thi 6.0 điểm -> không đủ điều kiện
+        attempt_low = UserQuizAttempt.objects.create(
+            quiz=self.quiz_a,
+            quiz_title=self.quiz_a.title,
+            user=self.user_a,
+            total_questions=10,
+            correct_answers=6,
+            score=6.0
+        )
+        resp_low = self.client.get(reverse('exports:export_certificate', kwargs={'attempt_id': attempt_low.id}))
+        self.assertEqual(resp_low.status_code, 302)
+
+        # 2. Bài thi 9.5 điểm -> đủ điều kiện tải PDF chứng chỉ
+        attempt_high = UserQuizAttempt.objects.create(
+            quiz=self.quiz_a,
+            quiz_title=self.quiz_a.title,
+            user=self.user_a,
+            total_questions=10,
+            correct_answers=9,
+            score=9.5
+        )
+        resp_high = self.client.get(reverse('exports:export_certificate', kwargs={'attempt_id': attempt_high.id}))
+        self.assertEqual(resp_high.status_code, 200)
+        self.assertEqual(resp_high['Content-Type'], 'application/pdf')
+        self.assertIn('ChungChi_', resp_high['Content-Disposition'])
+
