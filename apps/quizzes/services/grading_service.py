@@ -88,6 +88,13 @@ class GradingService:
         
         logger.info(f"Quiz attempt saved: User={user.username}, Score={attempt.score}")
         
+        # Cập nhật chuỗi ngày học tập liên tục (Daily Study Streak)
+        try:
+            if hasattr(user, 'record_activity'):
+                user.record_activity()
+        except Exception as e:
+            logger.warning(f"Failed to record user streak: {e}")
+
         # Invalidate cache sau khi nộp bài thi mới
         try:
             from apps.core.cache_utils import CacheManager
